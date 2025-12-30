@@ -52,30 +52,18 @@ open index.html
 
 ## Deployment
 
-This project is configured for deployment to Firebase Hosting via GitHub Actions. The workflow automatically deploys on pushes to the main branch.
+This project can be easily deployed to GitHub Pages for free hosting.
 
-### Firebase Setup
+### GitHub Pages Setup
 
-1. Install Firebase CLI:
-   ```bash
-   npm install -g firebase-tools
-   ```
-2. Login to Firebase:
-   ```bash
-   firebase login
-   ```
-3. Create a Firebase project at https://console.firebase.google.com/
-4. Initialize Firebase Hosting in your project:
-   ```bash
-   firebase init hosting
-   ```
-   (Select your project and use the default settings - the `firebase.json` is already configured)
-5. Generate a Firebase CI token:
-   ```bash
-   firebase login:ci
-   ```
-6. Add the token as a GitHub secret named `FIREBASE_TOKEN`
-7. Add your Firebase project ID as a GitHub secret named `FIREBASE_PROJECT`
+1. Go to your repository on GitHub
+2. Navigate to **Settings** > **Pages**
+3. Under **Source**, select **Deploy from a branch**
+4. Choose the **main** branch and **/(root)** folder
+5. Click **Save**
+6. Your site will be available at `https://[username].github.io/[repository-name]/`
+
+The deployment is automatic - any push to the main branch will update the live site.
 
 ## Browser Support
 
