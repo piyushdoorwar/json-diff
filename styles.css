@@ -159,7 +159,8 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.75rem;
-      gap: 0.5rem;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
     .panel-head h2 {
@@ -189,6 +190,43 @@
       display: flex;
       gap: 0.5rem;
       align-items: center;
+    }
+
+    .editor-controls-wrapper {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .editor-indent-controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .indent-size-input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.5rem;
+      border-radius: 0.5rem;
+      width: 50px;
+      font-size: 0.85rem;
+    }
+
+    .indent-type-select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .indent-type-select option {
+      background: var(--bg-panel);
+      color: var(--text);
     }
 
     .icon-btn {
@@ -336,6 +374,15 @@
 
     .CodeMirror-linenumber {
       color: var(--muted);
+    }
+
+    .line-error {
+      background: rgba(255, 108, 108, 0.15) !important;
+    }
+
+    .error-text {
+      text-decoration: wavy underline;
+      text-decoration-color: var(--missing-border);
     }
 
     .diff-panel {

@@ -2,8 +2,6 @@
       left: document.getElementById("jsonA"),
       right: document.getElementById("jsonB"),
     };
-    const indentSizeInput = document.getElementById("indentSize");
-    const indentTypeSelect = document.getElementById("indentType");
     const diffOutput = document.getElementById("diffOutput");
     const summaryLine = document.getElementById("summaryLine");
     const statusMessage = document.getElementById("statusMessage");
@@ -129,7 +127,7 @@
         
         switch (action) {
           case "beautify":
-            beautifyJSON(editor);
+            beautifyJSON(editor, editorSide);
             break;
           case "validate":
             validateJSON(editor);
@@ -147,7 +145,16 @@
       });
     });
 
-    function beautifyJSON(editor) {
+    function getIndentSettings(editorSide) {
+      const indentSizeInput = document.querySelector(`.indent-size-input[data-editor="${editorSide}"]`);
+      const indentTypeSelect = document.querySelector(`.indent-type-select[data-editor="${editorSide}"]`);
+      return {
+        size: Number(indentSizeInput.value) || 2,
+        type: indentTypeSelect.value
+      };
+    }
+
+    function beautifyJSON(editor, editorSide) {
       const value = editor.getValue().trim();
       if (!value) {
         showToast("No JSON to beautify", "error");
@@ -158,9 +165,10 @@
         showToast("Invalid JSON - cannot beautify", "error");
         return;
       }
-      const indent = indentTypeSelect.value === "tabs" ? "\t" : " ".repeat(Number(indentSizeInput.value) || 2);
+      const settings = getIndentSettings(editorSide);
+      const indent = settings.type === "tabs" ? "\t" : " ".repeat(settings.size);
       editor.setValue(JSON.stringify(parsed, null, indent));
-      editor.setOption("indentUnit", indentTypeSelect.value === "tabs" ? 1 : Number(indentSizeInput.value) || 2);
+      editor.setOption("indentUnit", settings.type === "tabs" ? 1 : settings.size);
       showToast("JSON beautified successfully", "success");
     }
 
@@ -170,12 +178,53 @@
         showToast("No JSON to validate", "error");
         return;
       }
-      const parsed = tryParse(value);
-      if (!parsed) {
-        showToast("Invalid JSON - syntax error detected", "error");
-        return;
+      
+      // Clear any previous error highlighting
+      editor.getAllMarks().forEach(mark => mark.clear());
+      
+      try {
+        JSON.parse(value);
+        showToast("Valid JSON ✓", "success");
+      } catch (error) {
+        // Extract line number from error message
+        const lineMatch = error.message.match(/position (\d+)/);
+        let lineNum = null;
+        
+        if (lineMatch) {
+          const position = parseInt(lineMatch[1]);
+          const beforeError = value.substring(0, position);
+          lineNum = beforeError.split('\n').length;
+        }
+        
+        // Fallback: try to find line from other error patterns
+        if (!lineNum) {
+          const jsonLineMatch = error.message.match(/line (\d+)/i);
+          if (jsonLineMatch) {
+            lineNum = parseInt(jsonLineMatch[1]);
+          }
+        }
+        
+        if (lineNum) {
+          // Highlight the error line
+          const line = lineNum - 1; // CodeMirror uses 0-based indexing
+          editor.addLineClass(line, "background", "line-error");
+          
+          // Create a marker for the line
+          const from = { line: line, ch: 0 };
+          const to = { line: line, ch: editor.getLine(line).length };
+          editor.markText(from, to, { 
+            className: "error-text",
+            clearOnEnter: true
+          });
+          
+          // Scroll to the error line
+          editor.scrollIntoView({ line: line, ch: 0 }, 100);
+          
+          showToast(`Invalid JSON - Error on line ${lineNum}`, "error");
+        } else {
+          showToast(`Invalid JSON - ${error.message}`, "error");
+        }
       }
-      showToast("Valid JSON ✓", "success");
     }
 
     function copyJSON(editor) {
@@ -213,18 +262,6 @@
       showToast("Editor cleared", "success");
     }
 
-    document.querySelectorAll("[data-format-target]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const target = btn.dataset.formatTarget === "left" ? editors.left : editors.right;
-        formatEditor(target);
-      });
-    });
-
-    document.getElementById("beautifyAll").addEventListener("click", () => {
-      formatEditor(editors.left);
-      formatEditor(editors.right);
-    });
-
     document.getElementById("compareBtn").addEventListener("click", () => {
       compareJson();
     });
@@ -236,24 +273,6 @@
     keyCaseSelect.addEventListener("change", () => {
       if (lastLeftData) renderMerged(mergedOutput, lastLeftData, lastRightData, lastEntries, sortKeysInput.checked, keyCaseSelect.value);
     });
-
-    function formatEditor(editor) {
-      const value = editor.getValue().trim();
-      if (!value) {
-        statusMessage.textContent = "Paste JSON on that side to format it.";
-        return;
-      }
-      const parsed = tryParse(value);
-      if (!parsed) {
-        statusMessage.textContent = "Unable to parse JSON. Please fix syntax errors.";
-        return;
-      }
-      statusMessage.textContent = "";
-      const indent = indentTypeSelect.value === "tabs" ? "\t" : " ".repeat(Number(indentSizeInput.value) || 2);
-      editor.setValue(JSON.stringify(parsed, null, indent));
-      // Update indent unit
-      editor.setOption("indentUnit", indentTypeSelect.value === "tabs" ? 1 : Number(indentSizeInput.value) || 2);
-    }
 
     function compareJson() {
       const leftData = tryParse(editors.left.getValue().trim());
