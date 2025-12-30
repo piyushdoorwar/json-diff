@@ -118,6 +118,29 @@
     editors.left.setValue(JSON.stringify(sampleOriginal, null, 2));
     editors.right.setValue(JSON.stringify(sampleModified, null, 2));
 
+    // Add event listeners for indent controls
+    document.querySelectorAll(".indent-size-input, .indent-type-select").forEach((control) => {
+      control.addEventListener("change", () => {
+        const editorSide = control.dataset.editor;
+        const editor = editorSide === "left" ? editors.left : editors.right;
+        const settings = getIndentSettings(editorSide);
+        
+        // Update editor settings
+        editor.setOption("indentUnit", settings.type === "tabs" ? 1 : settings.size);
+        editor.setOption("indentWithTabs", settings.type === "tabs");
+        
+        // Reformat existing content to apply new indent settings
+        const value = editor.getValue().trim();
+        if (value) {
+          const parsed = tryParse(value);
+          if (parsed) {
+            const indent = settings.type === "tabs" ? "\t" : " ".repeat(settings.size);
+            editor.setValue(JSON.stringify(parsed, null, indent));
+          }
+        }
+      });
+    });
+
     // Icon button event handlers
     document.querySelectorAll(".icon-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
