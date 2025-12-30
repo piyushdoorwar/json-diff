@@ -7,6 +7,35 @@
     const diffOutput = document.getElementById("diffOutput");
     const summaryLine = document.getElementById("summaryLine");
     const statusMessage = document.getElementById("statusMessage");
+    const mergedOutput = document.getElementById("mergedOutput");
+    const sortKeysInput = document.getElementById("sortKeys");
+    const keyCaseSelect = document.getElementById("keyCase");
+
+    let lastLeftData, lastRightData, lastEntries;
+
+    // Initialize CodeMirror editors
+    editors.left = CodeMirror.fromTextArea(editors.left, {
+      mode: "application/json",
+      theme: "material",
+      lineNumbers: true,
+      indentUnit: 2,
+      smartIndent: true,
+      autoCloseBrackets: true,
+      matchBrackets: true,
+      lineWrapping: true,
+      gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+    });
+    editors.right = CodeMirror.fromTextArea(editors.right, {
+      mode: "application/json",
+      theme: "material",
+      lineNumbers: true,
+      indentUnit: 2,
+      smartIndent: true,
+      autoCloseBrackets: true,
+      matchBrackets: true,
+      lineWrapping: true,
+      gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+    });
 
     document.querySelectorAll("[data-format-target]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -24,8 +53,16 @@
       compareJson();
     });
 
+    sortKeysInput.addEventListener("change", () => {
+      if (lastLeftData) renderMerged(mergedOutput, lastLeftData, lastRightData, lastEntries, sortKeysInput.checked, keyCaseSelect.value);
+    });
+
+    keyCaseSelect.addEventListener("change", () => {
+      if (lastLeftData) renderMerged(mergedOutput, lastLeftData, lastRightData, lastEntries, sortKeysInput.checked, keyCaseSelect.value);
+    });
+
     function formatEditor(editor) {
-      const value = editor.value.trim();
+      const value = editor.getValue().trim();
       if (!value) {
         statusMessage.textContent = "Paste JSON on that side to format it.";
         return;
@@ -36,20 +73,25 @@
         return;
       }
       statusMessage.textContent = "";
-      const indent = indentTypeSelect.value === "tabs" ? "\t" : Number(indentSizeInput.value) || 2;
-      editor.value = JSON.stringify(parsed, null, indent);
+      const indent = indentTypeSelect.value === "tabs" ? "\t" : " ".repeat(Number(indentSizeInput.value) || 2);
+      editor.setValue(JSON.stringify(parsed, null, indent));
+      // Update indent unit
+      editor.setOption("indentUnit", indentTypeSelect.value === "tabs" ? 1 : Number(indentSizeInput.value) || 2);
     }
 
     function compareJson() {
-      const leftData = tryParse(editors.left.value.trim());
-      const rightData = tryParse(editors.right.value.trim());
+      const leftData = tryParse(editors.left.getValue().trim());
+      const rightData = tryParse(editors.right.getValue().trim());
       if (!leftData || !rightData) {
         statusMessage.textContent = "Make sure both sides contain valid JSON to run the comparison.";
         return;
       }
       statusMessage.textContent = "";
       const entries = diffObjects(leftData, rightData);
-      renderDiff(entries);
+      renderDiff(entries, leftData, rightData);
+      lastLeftData = leftData;
+      lastRightData = rightData;
+      lastEntries = entries;
     }
 
     function tryParse(value) {
@@ -133,11 +175,13 @@
       return false;
     }
 
-    function renderDiff(entries) {
+    function renderDiff(entries, leftData, rightData) {
       diffOutput.innerHTML = "";
+      mergedOutput.innerHTML = "";
       if (!entries.length) {
         summaryLine.textContent = "No differences detected.";
         diffOutput.innerHTML = "<div class=\"diff-entry status-modified\">No textual delta found.</div>";
+        renderMerged(mergedOutput, leftData, rightData, entries, sortKeysInput.checked, keyCaseSelect.value);
         return;
       }
       const counts = entries.reduce(
@@ -148,6 +192,7 @@
         { missing: 0, addition: 0, minor: 0, modified: 0 }
       );
       summaryLine.textContent = `Missing ${counts.missing}, Added ${counts.addition}, Minor ${counts.minor}, Updates ${counts.modified}`;
+      renderMerged(mergedOutput, leftData, rightData, entries, sortKeysInput.checked, keyCaseSelect.value);
       entries.forEach((entry) => {
         const node = document.createElement("div");
         node.classList.add("diff-entry", `status-${entry.status}`);
@@ -176,6 +221,129 @@
         return JSON.stringify(value, null, 2);
       }
       return String(value);
+    }
+
+    function renderMerged(output, leftData, rightData, entries, sortKeys, keyCase) {
+      const diffMap = new Map();
+      entries.forEach(entry => {
+        diffMap.set(entry.path, entry);
+      });
+      const mergedObj = mergeWithLeft(rightData, leftData);
+      const mergedString = buildMergedString(mergedObj, "", diffMap, 0, sortKeys, keyCase);
+      output.innerHTML = mergedString;
+    }
+
+    function mergeWithLeft(right, left) {
+      if (isObject(right) && isObject(left) && !Array.isArray(right) && !Array.isArray(left)) {
+        const merged = {};
+        const allKeys = new Set([...Object.keys(right), ...Object.keys(left)]);
+        allKeys.forEach(key => {
+          if (right.hasOwnProperty(key) && left.hasOwnProperty(key)) {
+            merged[key] = mergeWithLeft(right[key], left[key]);
+          } else if (right.hasOwnProperty(key)) {
+            merged[key] = mergeWithLeft(right[key], left[key]);
+          } else {
+            merged[key] = mergeWithLeft(left[key], left[key]);
+          }
+        });
+        return merged;
+      }
+      return right !== undefined ? right : left;
+    }
+
+    function transformKeyCase(key, casing) {
+      switch (casing) {
+        case "camel":
+          return toCamelCase(key);
+        case "pascal":
+          return toPascalCase(key);
+        case "snake":
+          return toSnakeCase(key);
+        case "kebab":
+          return toKebabCase(key);
+        case "upper":
+          return key.toUpperCase();
+        default:
+          return key;
+      }
+    }
+
+    function toCamelCase(str) {
+      return str.replace(/[-_](.)/g, (_, letter) => letter.toUpperCase());
+    }
+
+    function toPascalCase(str) {
+      return str.replace(/(^|[-_])(.)/g, (_, __, letter) => letter.toUpperCase());
+    }
+
+    function toSnakeCase(str) {
+      return str.replace(/([a-z])([A-Z])/g, '$1_$2').replace(/[-]/g, '_').toLowerCase();
+    }
+
+    function toKebabCase(str) {
+      return str.replace(/([a-z])([A-Z])/g, '$1-$2').replace(/[_]/g, '-').toLowerCase();
+    }
+
+    function buildMergedString(obj, path, diffMap, indentLevel, sortKeys, keyCase) {
+      const indent = "  ".repeat(indentLevel);
+      if (obj === null) {
+        return "null";
+      }
+      if (typeof obj === "boolean") {
+        return obj.toString();
+      }
+      if (typeof obj === "number") {
+        return obj.toString();
+      }
+      if (typeof obj === "string") {
+        const currentPath = path;
+        const diff = diffMap.get(currentPath);
+        let className = "";
+        if (diff) {
+          if (diff.status === "missing") className = "diff-missing";
+          else if (diff.status === "addition") className = "diff-addition";
+          else if (diff.status === "minor") className = "diff-minor";
+          else if (diff.status === "modified") className = "diff-modified";
+        }
+        const escaped = escapeHtml(JSON.stringify(obj));
+        return className ? `<span class="${className}">${escaped}</span>` : escaped;
+      }
+      if (Array.isArray(obj)) {
+        const items = obj.map((item, index) => {
+          const itemPath = path ? `${path}[${index}]` : `[${index}]`;
+          return buildMergedString(item, itemPath, diffMap, indentLevel, sortKeys, keyCase);
+        });
+        return `[\n${indent}  ${items.join(`,\n${indent}  `)}\n${indent}]`;
+      }
+      if (typeof obj === "object") {
+        let keys = Object.keys(obj);
+        if (sortKeys) {
+          keys.sort();
+        }
+        const entries = keys.map(key => {
+          const transformedKey = transformKeyCase(key, keyCase);
+          const valuePath = path ? `${path}.${key}` : key;
+          const diff = diffMap.get(valuePath);
+          let keyClass = "";
+          let valueClass = "";
+          if (diff) {
+            if (diff.status === "missing") {
+              keyClass = valueClass = "diff-missing";
+            } else if (diff.status === "addition") {
+              keyClass = valueClass = "diff-addition";
+            } else if (diff.status === "minor") {
+              keyClass = valueClass = "diff-minor";
+            } else if (diff.status === "modified") {
+              keyClass = valueClass = "diff-modified";
+            }
+          }
+          const keyStr = keyClass ? `<span class="${keyClass}">"${transformedKey}"</span>` : `"${transformedKey}"`;
+          const valueStr = buildMergedString(obj[key], valuePath, diffMap, indentLevel + 1, sortKeys, keyCase);
+          return `${indent}  ${keyStr}: ${valueStr}`;
+        });
+        return `{\n${entries.join(",\n")}\n${indent}}`;
+      }
+      return "";
     }
 
     function escapeHtml(text) {

@@ -78,6 +78,14 @@
       justify-content: space-between;
     }
 
+    .merged-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
     .control-group {
       display: flex;
       gap: 0.75rem;
@@ -100,6 +108,15 @@
       border-radius: 0.65rem;
       min-width: 70px;
       font-size: 0.9rem;
+    }
+
+    .control-group select {
+      background: var(--bg-panel);
+    }
+
+    .control-group select option {
+      background: var(--bg-panel);
+      color: var(--text);
     }
 
     .control-bar button {
@@ -185,6 +202,28 @@
       color: rgba(255, 255, 255, 0.3);
     }
 
+    .CodeMirror {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: inherit;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      width: 100%;
+      height: 100%;
+    }
+
+    .CodeMirror-gutters {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+    }
+
+    .CodeMirror-linenumber {
+      color: var(--muted);
+    }
+
     .diff-panel {
       background: var(--bg-panel-alt);
       border-radius: 1.5rem;
@@ -239,6 +278,20 @@
       color: var(--muted);
     }
 
+    .merged-editor {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      min-height: 200px;
+    }
+
     .legend {
       display: flex;
       gap: 0.75rem;
@@ -281,6 +334,22 @@
     .status-modified {
       background: var(--modified);
       border-color: var(--modified-border);
+    }
+
+    .diff-missing {
+      color: var(--missing-border);
+    }
+
+    .diff-addition {
+      color: var(--addition-border);
+    }
+
+    .diff-minor {
+      color: var(--minor-border);
+    }
+
+    .diff-modified {
+      color: var(--modified-border);
     }
 
     .value-line {

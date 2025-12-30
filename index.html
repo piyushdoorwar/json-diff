@@ -11,6 +11,8 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
 </head>
 <body>
   <main>
@@ -66,6 +68,25 @@
         <button id="compareBtn">Compare JSON</button>
       </div>
       <div id="statusMessage" class="diff-summary"></div>
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--text);">Merged JSON View</h4>
+      <div class="merged-controls">
+        <div class="control-group">
+          <label for="sortKeys">Sort keys</label>
+          <input type="checkbox" id="sortKeys">
+        </div>
+        <div class="control-group">
+          <label for="keyCase">Key casing</label>
+          <select id="keyCase">
+            <option value="none">None</option>
+            <option value="camel">camelCase</option>
+            <option value="pascal">PascalCase</option>
+            <option value="snake">snake_case</option>
+            <option value="kebab">kebab-case</option>
+            <option value="upper">UPPER_CASE</option>
+          </select>
+        </div>
+      </div>
+      <div id="mergedOutput" class="merged-editor"></div>
       <div id="diffOutput" class="diff-output"></div>
       <div class="legend">
         <span><span class="legend-bullet" style="background:#451a1a;"></span>Missing values</span>
@@ -76,6 +97,8 @@
     </section>
   </main>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
