@@ -10,8 +10,31 @@
     const mergedOutput = document.getElementById("mergedOutput");
     const sortKeysInput = document.getElementById("sortKeys");
     const keyCaseSelect = document.getElementById("keyCase");
+    const toastContainer = document.getElementById("toast-container");
 
     let lastLeftData, lastRightData, lastEntries;
+
+    // Toast notification function
+    function showToast(message, type = "info") {
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      
+      let iconClass = "fa-info-circle";
+      if (type === "success") iconClass = "fa-check-circle";
+      else if (type === "error") iconClass = "fa-exclamation-circle";
+      
+      toast.innerHTML = `
+        <i class="fas ${iconClass} toast-icon"></i>
+        <div class="toast-message">${message}</div>
+      `;
+      
+      toastContainer.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = "slideOut 0.3s ease";
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
 
     // Initialize CodeMirror editors
     editors.left = CodeMirror.fromTextArea(editors.left, {
@@ -36,6 +59,159 @@
       lineWrapping: true,
       gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
     });
+
+    // Load sample JSON on initialization
+    const sampleOriginal = {
+      "user": {
+        "id": 12345,
+        "username": "johndoe",
+        "email": "john@example.com",
+        "profile": {
+          "firstName": "John",
+          "lastName": "Doe",
+          "age": 28,
+          "location": "New York"
+        },
+        "settings": {
+          "theme": "dark",
+          "notifications": true,
+          "language": "en"
+        },
+        "lastLogin": "2025-12-29T14:32:15Z",
+        "createdAt": "2023-01-15T08:00:00Z"
+      },
+      "subscription": {
+        "plan": "basic",
+        "status": "active",
+        "price": 9.99
+      },
+      "features": ["email", "chat", "storage"]
+    };
+
+    const sampleModified = {
+      "user": {
+        "id": 12345,
+        "username": "johndoe_updated",
+        "email": "john.doe@newdomain.com",
+        "profile": {
+          "firstName": "John",
+          "lastName": "Doe",
+          "age": 29,
+          "location": "San Francisco",
+          "bio": "Software Developer"
+        },
+        "settings": {
+          "theme": "light",
+          "notifications": true,
+          "privacy": "public"
+        },
+        "lastLogin": "2025-12-30T10:15:42Z",
+        "updatedAt": "2025-12-30T10:15:42Z"
+      },
+      "subscription": {
+        "plan": "premium",
+        "status": "active",
+        "price": 19.99,
+        "renewalDate": "2026-01-30"
+      },
+      "features": ["email", "chat", "storage", "analytics", "api-access"]
+    };
+
+    editors.left.setValue(JSON.stringify(sampleOriginal, null, 2));
+    editors.right.setValue(JSON.stringify(sampleModified, null, 2));
+
+    // Icon button event handlers
+    document.querySelectorAll(".icon-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const action = btn.dataset.action;
+        const editorSide = btn.dataset.editor;
+        const editor = editorSide === "left" ? editors.left : editors.right;
+        
+        switch (action) {
+          case "beautify":
+            beautifyJSON(editor);
+            break;
+          case "validate":
+            validateJSON(editor);
+            break;
+          case "copy":
+            copyJSON(editor);
+            break;
+          case "paste":
+            pasteJSON(editor);
+            break;
+          case "clear":
+            clearJSON(editor);
+            break;
+        }
+      });
+    });
+
+    function beautifyJSON(editor) {
+      const value = editor.getValue().trim();
+      if (!value) {
+        showToast("No JSON to beautify", "error");
+        return;
+      }
+      const parsed = tryParse(value);
+      if (!parsed) {
+        showToast("Invalid JSON - cannot beautify", "error");
+        return;
+      }
+      const indent = indentTypeSelect.value === "tabs" ? "\t" : " ".repeat(Number(indentSizeInput.value) || 2);
+      editor.setValue(JSON.stringify(parsed, null, indent));
+      editor.setOption("indentUnit", indentTypeSelect.value === "tabs" ? 1 : Number(indentSizeInput.value) || 2);
+      showToast("JSON beautified successfully", "success");
+    }
+
+    function validateJSON(editor) {
+      const value = editor.getValue().trim();
+      if (!value) {
+        showToast("No JSON to validate", "error");
+        return;
+      }
+      const parsed = tryParse(value);
+      if (!parsed) {
+        showToast("Invalid JSON - syntax error detected", "error");
+        return;
+      }
+      showToast("Valid JSON ✓", "success");
+    }
+
+    function copyJSON(editor) {
+      const value = editor.getValue();
+      if (!value.trim()) {
+        showToast("Nothing to copy", "error");
+        return;
+      }
+      navigator.clipboard.writeText(value).then(() => {
+        showToast("Copied to clipboard", "success");
+      }).catch(() => {
+        showToast("Failed to copy", "error");
+      });
+    }
+
+    function pasteJSON(editor) {
+      navigator.clipboard.readText().then((text) => {
+        if (!text) {
+          showToast("Clipboard is empty", "error");
+          return;
+        }
+        editor.setValue(text);
+        showToast("Pasted from clipboard", "success");
+      }).catch(() => {
+        showToast("Failed to paste - clipboard access denied", "error");
+      });
+    }
+
+    function clearJSON(editor) {
+      if (!editor.getValue().trim()) {
+        showToast("Already empty", "info");
+        return;
+      }
+      editor.setValue("");
+      showToast("Editor cleared", "success");
+    }
 
     document.querySelectorAll("[data-format-target]").forEach((btn) => {
       btn.addEventListener("click", () => {

@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -25,36 +26,68 @@
       </p>
     </header>
 
-    <div class="lg-card control-bar">
-      <div class="control-group">
-        <label for="indentSize">Indent size</label>
-        <input id="indentSize" type="number" min="0" max="8" value="2" />
-      </div>
-      <div class="control-group">
-        <label for="indentType">Indent type</label>
-        <select id="indentType">
-          <option value="spaces">Spaces</option>
-          <option value="tabs">Tabs</option>
-        </select>
-      </div>
-      <div class="control-group">
-        <label>Actions</label>
-        <button id="beautifyAll">Beautify both</button>
-      </div>
-    </div>
-
     <section class="editor-grid">
       <article class="editor-panel">
         <div class="panel-head">
           <h2>Original JSON</h2>
-          <button data-format-target="left">Format</button>
+          <div class="editor-controls-wrapper">
+            <div class="editor-indent-controls">
+              <input class="indent-size-input" data-editor="left" type="number" min="0" max="8" value="2" title="Indent size" />
+              <select class="indent-type-select" data-editor="left" title="Indent type">
+                <option value="spaces">Spaces</option>
+                <option value="tabs">Tabs</option>
+              </select>
+            </div>
+            <div class="editor-toolbar">
+              <button class="icon-btn" data-action="beautify" data-editor="left" title="Beautify JSON">
+                <i class="fas fa-magic"></i>
+              </button>
+              <button class="icon-btn" data-action="validate" data-editor="left" title="Validate JSON">
+                <i class="fas fa-check-circle"></i>
+              </button>
+              <button class="icon-btn" data-action="copy" data-editor="left" title="Copy">
+                <i class="fas fa-copy"></i>
+              </button>
+              <button class="icon-btn" data-action="paste" data-editor="left" title="Paste">
+                <i class="fas fa-paste"></i>
+              </button>
+              <button class="icon-btn" data-action="clear" data-editor="left" title="Clear">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
         </div>
         <textarea id="jsonA" spellcheck="false" placeholder="Paste or type the base JSON here..."></textarea>
       </article>
       <article class="editor-panel">
         <div class="panel-head">
           <h2>Modified JSON</h2>
-          <button data-format-target="right">Format</button>
+          <div class="editor-controls-wrapper">
+            <div class="editor-indent-controls">
+              <input class="indent-size-input" data-editor="right" type="number" min="0" max="8" value="2" title="Indent size" />
+              <select class="indent-type-select" data-editor="right" title="Indent type">
+                <option value="spaces">Spaces</option>
+                <option value="tabs">Tabs</option>
+              </select>
+            </div>
+            <div class="editor-toolbar">
+              <button class="icon-btn" data-action="beautify" data-editor="right" title="Beautify JSON">
+                <i class="fas fa-magic"></i>
+              </button>
+              <button class="icon-btn" data-action="validate" data-editor="right" title="Validate JSON">
+                <i class="fas fa-check-circle"></i>
+              </button>
+              <button class="icon-btn" data-action="copy" data-editor="right" title="Copy">
+                <i class="fas fa-copy"></i>
+              </button>
+              <button class="icon-btn" data-action="paste" data-editor="right" title="Paste">
+                <i class="fas fa-paste"></i>
+              </button>
+              <button class="icon-btn" data-action="clear" data-editor="right" title="Clear">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
         </div>
         <textarea id="jsonB" spellcheck="false" placeholder="Add the new JSON that should be compared..."></textarea>
       </article>
@@ -98,6 +131,8 @@
     </section>
   </main>
 
+  <div id="toast-container"></div>
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
   <script src="script.js"></script>

@@ -185,6 +185,120 @@
       color: var(--text);
     }
 
+    .editor-toolbar {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .icon-btn {
+      border: 1px solid transparent;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--accent-strong);
+      border-color: var(--border);
+      transform: translateY(-2px);
+    }
+
+    .icon-btn:active {
+      transform: translateY(0);
+    }
+
+    #toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(5, 10, 20, 0.95));
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 1rem 1.25rem;
+      min-width: 300px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: slideIn 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .toast.success {
+      border-left: 3px solid var(--addition-border);
+    }
+
+    .toast.error {
+      border-left: 3px solid var(--missing-border);
+    }
+
+    .toast.info {
+      border-left: 3px solid var(--accent);
+    }
+
+    .toast-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .toast.success .toast-icon {
+      color: var(--addition-border);
+    }
+
+    .toast.error .toast-icon {
+      color: var(--missing-border);
+    }
+
+    .toast.info .toast-icon {
+      color: var(--accent);
+    }
+
+    .toast-message {
+      flex: 1;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+    }
+
     textarea {
       flex: 1;
       background: transparent;
