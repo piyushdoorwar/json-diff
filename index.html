@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSON Diff Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>JSON Diff Studio</h1>
+      <p>
+        Track structural drift between two JSON documents, format both sides instantly, adjust indentation and
+        highlight missing, added, and time-sensitive values with clear color cues.
+      </p>
+    </header>
+
+    <div class="lg-card control-bar">
+      <div class="control-group">
+        <label for="indentSize">Indent size</label>
+        <input id="indentSize" type="number" min="0" max="8" value="2" />
+      </div>
+      <div class="control-group">
+        <label for="indentType">Indent type</label>
+        <select id="indentType">
+          <option value="spaces">Spaces</option>
+          <option value="tabs">Tabs</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Actions</label>
+        <button id="beautifyAll">Beautify both</button>
+      </div>
+    </div>
+
+    <section class="editor-grid">
+      <article class="editor-panel">
+        <div class="panel-head">
+          <h2>Original JSON</h2>
+          <button data-format-target="left">Format</button>
+        </div>
+        <textarea id="jsonA" spellcheck="false" placeholder="Paste or type the base JSON here..."></textarea>
+      </article>
+      <article class="editor-panel">
+        <div class="panel-head">
+          <h2>Modified JSON</h2>
+          <button data-format-target="right">Format</button>
+        </div>
+        <textarea id="jsonB" spellcheck="false" placeholder="Add the new JSON that should be compared..."></textarea>
+      </article>
+    </section>
+
+    <section class="diff-panel">
+      <div class="diff-header">
+        <div>
+          <h3>Comparison timeline</h3>
+          <div class="diff-summary" id="summaryLine">Awaiting comparison...</div>
+        </div>
+        <button id="compareBtn">Compare JSON</button>
+      </div>
+      <div id="statusMessage" class="diff-summary"></div>
+      <div id="diffOutput" class="diff-output"></div>
+      <div class="legend">
+        <span><span class="legend-bullet" style="background:#451a1a;"></span>Missing values</span>
+        <span><span class="legend-bullet" style="background:#112d14;"></span>Added values</span>
+        <span><span class="legend-bullet" style="background:#0f1d3c;"></span>Minor/time-based differences</span>
+        <span><span class="legend-bullet" style="background:#312515;"></span>Structural updates</span>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
