@@ -1,12 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0c1321;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#141c2f;stop-opacity:1" />
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5dd0df;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8ce4ff;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6dc7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff9de6;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <rect width="32" height="32" rx="4" fill="url(#bg)"/>
-  <text x="16" y="22" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#5dd0df">JD</text>
-  <path d="M8 12 L12 8 L16 12 L20 8 L24 12" stroke="#7cf27c" stroke-width="1.5" fill="none"/>
-  <path d="M8 20 L12 24 L16 20 L20 24 L24 20" stroke="#ff6c6c" stroke-width="1.5" fill="none"/>
+  
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#05070f" stroke="url(#grad1)" stroke-width="3"/>
+  
+  <!-- Left brace -->
+  <path d="M 25 30 Q 20 30 20 35 L 20 45 Q 20 48 17 48 Q 20 48 20 51 L 20 61 Q 20 66 25 66" 
+        fill="none" stroke="url(#grad1)" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Right brace -->
+  <path d="M 75 30 Q 80 30 80 35 L 80 45 Q 80 48 83 48 Q 80 48 80 51 L 80 61 Q 80 66 75 66" 
+        fill="none" stroke="url(#grad2)" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Diff arrows in center -->
+  <g transform="translate(50, 48)">
+    <!-- Left arrow (removed) -->
+    <path d="M -10 -8 L -18 -8 L -14 -12 M -18 -8 L -14 -4" 
+          fill="none" stroke="#ff6c6c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Right arrow (added) -->
+    <path d="M 10 8 L 18 8 L 14 4 M 18 8 L 14 12" 
+          fill="none" stroke="#7cf27c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Center dots -->
+    <circle cx="-3" cy="-8" r="1.5" fill="#ff6c6c"/>
+    <circle cx="0" cy="0" r="1.5" fill="#5dd0df"/>
+    <circle cx="3" cy="8" r="1.5" fill="#7cf27c"/>
+  </g>
 </svg>
