@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
   <link rel="stylesheet" href="styles.css">
@@ -32,26 +32,26 @@
           <h2>Original JSON</h2>
           <div class="editor-controls-wrapper">
             <div class="editor-indent-controls">
-              <input class="indent-size-input" data-editor="left" type="number" min="0" max="8" value="2" title="Indent size" />
-              <select class="indent-type-select" data-editor="left" title="Indent type">
+              <input class="indent-size-input" data-editor="left" type="number" min="0" max="8" value="2" aria-label="Indent size" data-tooltip="Indent size" />
+              <select class="indent-type-select" data-editor="left" aria-label="Indent type" data-tooltip="Indent type">
                 <option value="spaces">Spaces</option>
                 <option value="tabs">Tabs</option>
               </select>
             </div>
             <div class="editor-toolbar">
-              <button class="icon-btn" data-action="beautify" data-editor="left" title="Beautify JSON">
+              <button class="icon-btn" data-action="beautify" data-editor="left" aria-label="Beautify JSON" data-tooltip="Beautify JSON">
                 <i class="fas fa-magic"></i>
               </button>
-              <button class="icon-btn" data-action="validate" data-editor="left" title="Validate JSON">
+              <button class="icon-btn" data-action="validate" data-editor="left" aria-label="Validate JSON" data-tooltip="Validate JSON">
                 <i class="fas fa-check-circle"></i>
               </button>
-              <button class="icon-btn" data-action="copy" data-editor="left" title="Copy">
+              <button class="icon-btn" data-action="copy" data-editor="left" aria-label="Copy" data-tooltip="Copy">
                 <i class="fas fa-copy"></i>
               </button>
-              <button class="icon-btn" data-action="paste" data-editor="left" title="Paste">
+              <button class="icon-btn" data-action="paste" data-editor="left" aria-label="Paste" data-tooltip="Paste">
                 <i class="fas fa-paste"></i>
               </button>
-              <button class="icon-btn" data-action="clear" data-editor="left" title="Clear">
+              <button class="icon-btn" data-action="clear" data-editor="left" aria-label="Clear" data-tooltip="Clear">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -64,26 +64,26 @@
           <h2>Modified JSON</h2>
           <div class="editor-controls-wrapper">
             <div class="editor-indent-controls">
-              <input class="indent-size-input" data-editor="right" type="number" min="0" max="8" value="2" title="Indent size" />
-              <select class="indent-type-select" data-editor="right" title="Indent type">
+              <input class="indent-size-input" data-editor="right" type="number" min="0" max="8" value="2" aria-label="Indent size" data-tooltip="Indent size" />
+              <select class="indent-type-select" data-editor="right" aria-label="Indent type" data-tooltip="Indent type">
                 <option value="spaces">Spaces</option>
                 <option value="tabs">Tabs</option>
               </select>
             </div>
             <div class="editor-toolbar">
-              <button class="icon-btn" data-action="beautify" data-editor="right" title="Beautify JSON">
+              <button class="icon-btn" data-action="beautify" data-editor="right" aria-label="Beautify JSON" data-tooltip="Beautify JSON">
                 <i class="fas fa-magic"></i>
               </button>
-              <button class="icon-btn" data-action="validate" data-editor="right" title="Validate JSON">
+              <button class="icon-btn" data-action="validate" data-editor="right" aria-label="Validate JSON" data-tooltip="Validate JSON">
                 <i class="fas fa-check-circle"></i>
               </button>
-              <button class="icon-btn" data-action="copy" data-editor="right" title="Copy">
+              <button class="icon-btn" data-action="copy" data-editor="right" aria-label="Copy" data-tooltip="Copy">
                 <i class="fas fa-copy"></i>
               </button>
-              <button class="icon-btn" data-action="paste" data-editor="right" title="Paste">
+              <button class="icon-btn" data-action="paste" data-editor="right" aria-label="Paste" data-tooltip="Paste">
                 <i class="fas fa-paste"></i>
               </button>
-              <button class="icon-btn" data-action="clear" data-editor="right" title="Clear">
+              <button class="icon-btn" data-action="clear" data-editor="right" aria-label="Clear" data-tooltip="Clear">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -123,10 +123,10 @@
       <div id="mergedOutput" class="merged-editor"></div>
       <div id="diffOutput" class="diff-output"></div>
       <div class="legend">
-        <span><span class="legend-bullet" style="background:#451a1a;"></span>Missing values</span>
-        <span><span class="legend-bullet" style="background:#112d14;"></span>Added values</span>
-        <span><span class="legend-bullet" style="background:#0f1d3c;"></span>Minor/time-based differences</span>
-        <span><span class="legend-bullet" style="background:#312515;"></span>Structural updates</span>
+        <span><span class="legend-bullet" style="background: rgba(255, 107, 157, 0.22);"></span>Missing values</span>
+        <span><span class="legend-bullet" style="background: rgba(0, 208, 156, 0.22);"></span>Added values</span>
+        <span><span class="legend-bullet" style="background: rgba(93, 173, 226, 0.22);"></span>Minor/time-based differences</span>
+        <span><span class="legend-bullet" style="background: rgba(255, 215, 0, 0.18);"></span>Structural updates</span>
       </div>
     </section>
   </main>
@@ -136,5 +136,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
   <script src="script.js"></script>
+
+  <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "e9cd556fb46f4880a8842d37e2dfe3fb"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
