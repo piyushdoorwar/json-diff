@@ -1,39 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
   <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#5dd0df;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8ce4ff;stop-opacity:1" />
+    <!-- Premium gradient: Yellow to Purple -->
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ff6dc7;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#ff9de6;stop-opacity:1" />
-    </linearGradient>
+    
+    <!-- Purple glow -->
+    <filter id="purpleGlow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
   
-  <!-- Background circle -->
-  <circle cx="50" cy="50" r="48" fill="#05070f" stroke="url(#grad1)" stroke-width="3"/>
+  <!-- Dark background circle with subtle border -->
+  <circle cx="50" cy="50" r="48" fill="#0d0d0d" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
   
-  <!-- Left brace -->
-  <path d="M 25 30 Q 20 30 20 35 L 20 45 Q 20 48 17 48 Q 20 48 20 51 L 20 61 Q 20 66 25 66" 
-        fill="none" stroke="url(#grad1)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Outer ring with brand gradient -->
+  <circle cx="50" cy="50" r="46" fill="none" stroke="url(#brandGradient)" stroke-width="2" opacity="0.5"/>
   
-  <!-- Right brace -->
-  <path d="M 75 30 Q 80 30 80 35 L 80 45 Q 80 48 83 48 Q 80 48 80 51 L 80 61 Q 80 66 75 66" 
-        fill="none" stroke="url(#grad2)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Left JSON brace (yellow accent) -->
+  <path d="M 28 32 Q 23 32 23 37 L 23 44 Q 23 47 20 47 Q 23 47 23 50 L 23 57 Q 23 62 28 62" 
+        fill="none" stroke="#FFD700" stroke-width="3.5" stroke-linecap="round" filter="url(#purpleGlow)"/>
   
-  <!-- Diff arrows in center -->
-  <g transform="translate(50, 48)">
-    <!-- Left arrow (removed) -->
-    <path d="M -10 -8 L -18 -8 L -14 -12 M -18 -8 L -14 -4" 
-          fill="none" stroke="#ff6c6c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right JSON brace (purple accent) -->
+  <path d="M 72 32 Q 77 32 77 37 L 77 44 Q 77 47 80 47 Q 77 47 77 50 L 77 57 Q 77 62 72 62" 
+        fill="none" stroke="#8B5CF6" stroke-width="3.5" stroke-linecap="round" filter="url(#purpleGlow)"/>
+  
+  <!-- Center diff symbol - stylized comparison arrows -->
+  <g transform="translate(50, 47)">
+    <!-- Left side (old/removed) - pink accent -->
+    <path d="M -8 -6 L -14 -6 M -14 -6 L -11 -9 M -14 -6 L -11 -3" 
+          fill="none" stroke="#FF6B9D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     
-    <!-- Right arrow (added) -->
-    <path d="M 10 8 L 18 8 L 14 4 M 18 8 L 14 12" 
-          fill="none" stroke="#7cf27c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Right side (new/added) - green accent -->
+    <path d="M 8 6 L 14 6 M 14 6 L 11 3 M 14 6 L 11 9" 
+          fill="none" stroke="#00D09C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     
-    <!-- Center dots -->
-    <circle cx="-3" cy="-8" r="1.5" fill="#ff6c6c"/>
-    <circle cx="0" cy="0" r="1.5" fill="#5dd0df"/>
-    <circle cx="3" cy="8" r="1.5" fill="#7cf27c"/>
+    <!-- Center divider with gradient -->
+    <line x1="-2" y1="-2" x2="2" y2="2" stroke="url(#brandGradient)" stroke-width="2.5" stroke-linecap="round"/>
+    
+    <!-- Accent dots -->
+    <circle cx="-6" cy="-6" r="1.2" fill="#FFD700" opacity="0.8"/>
+    <circle cx="0" cy="0" r="1.5" fill="url(#brandGradient)"/>
+    <circle cx="6" cy="6" r="1.2" fill="#8B5CF6" opacity="0.8"/>
   </g>
 </svg>
