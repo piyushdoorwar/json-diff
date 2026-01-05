@@ -2,15 +2,21 @@
       left: document.getElementById("jsonA"),
       right: document.getElementById("jsonB"),
     };
-    const diffOutput = document.getElementById("diffOutput");
-    const summaryLine = document.getElementById("summaryLine");
-    const statusMessage = document.getElementById("statusMessage");
-    const mergedOutput = document.getElementById("mergedOutput");
-    const sortKeysInput = document.getElementById("sortKeys");
-    const keyCaseSelect = document.getElementById("keyCase");
     const toastContainer = document.getElementById("toast-container");
+    const settingsModal = document.getElementById("settingsModal");
+    const settingsCloseBtn = document.getElementById("settingsCloseBtn");
+    const indentSizeInput = document.getElementById("indentSize");
+    const indentTypeSelect = document.getElementById("indentType");
 
     let lastLeftData, lastRightData, lastEntries;
+    let compareTimer;
+    const compareDebounceMs = 250;
+    let lastSettingsAnchor = "settings-indent";
+
+    const editorDiffHighlights = {
+      left: new Set(),
+      right: new Set(),
+    };
 
     // Toast notification function
     function showToast(message, type = "info") {
@@ -118,37 +124,51 @@
     editors.left.setValue(JSON.stringify(sampleOriginal, null, 2));
     editors.right.setValue(JSON.stringify(sampleModified, null, 2));
 
-    // Add event listeners for indent controls
-    document.querySelectorAll(".indent-size-input, .indent-type-select").forEach((control) => {
-      control.addEventListener("change", () => {
-        const editorSide = control.dataset.editor;
-        const editor = editorSide === "left" ? editors.left : editors.right;
-        const settings = getIndentSettings(editorSide);
-        
-        // Update editor settings
-        editor.setOption("indentUnit", settings.type === "tabs" ? 1 : settings.size);
-        editor.setOption("indentWithTabs", settings.type === "tabs");
-        
-        // Reformat existing content to apply new indent settings
+    // Indent settings (applies to both editors)
+    function getIndentSettings() {
+      return {
+        size: Number(indentSizeInput?.value) || 2,
+        type: indentTypeSelect?.value || "spaces",
+      };
+    }
+
+    function applyIndentSettingsToEditors(reformat = true) {
+      const settings = getIndentSettings();
+      const indentUnit = settings.type === "tabs" ? 1 : settings.size;
+      const indentWithTabs = settings.type === "tabs";
+      const indent = settings.type === "tabs" ? "\t" : " ".repeat(settings.size);
+
+      [editors.left, editors.right].forEach((editor) => {
+        editor.setOption("indentUnit", indentUnit);
+        editor.setOption("indentWithTabs", indentWithTabs);
+
+        if (!reformat) return;
         const value = editor.getValue().trim();
-        if (value) {
-          const parsed = tryParse(value);
-          if (parsed) {
-            const indent = settings.type === "tabs" ? "\t" : " ".repeat(settings.size);
-            editor.setValue(JSON.stringify(parsed, null, indent));
-          }
-        }
+        if (!value) return;
+        const parsed = tryParse(value);
+        if (!parsed) return;
+        editor.setValue(JSON.stringify(parsed, null, indent));
+      });
+    }
+
+    [indentSizeInput, indentTypeSelect].filter(Boolean).forEach((control) => {
+      control.addEventListener("change", () => {
+        applyIndentSettingsToEditors(true);
+        scheduleCompare();
       });
     });
 
     // Icon button event handlers
-    document.querySelectorAll(".icon-btn").forEach((btn) => {
+    document.querySelectorAll(".icon-btn[data-action]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const action = btn.dataset.action;
         const editorSide = btn.dataset.editor;
         const editor = editorSide === "left" ? editors.left : editors.right;
         
         switch (action) {
+          case "settings":
+            openSettingsModal(editorSide);
+            break;
           case "beautify":
             beautifyJSON(editor, editorSide);
             break;
@@ -168,13 +188,157 @@
       });
     });
 
-    function getIndentSettings(editorSide) {
-      const indentSizeInput = document.querySelector(`.indent-size-input[data-editor="${editorSide}"]`);
-      const indentTypeSelect = document.querySelector(`.indent-type-select[data-editor="${editorSide}"]`);
-      return {
-        size: Number(indentSizeInput.value) || 2,
-        type: indentTypeSelect.value
-      };
+    function openSettingsModal(editorSide = "left") {
+      if (!settingsModal) return;
+      lastSettingsAnchor = "settings-indent";
+      settingsModal.classList.add("is-open");
+      settingsModal.setAttribute("aria-hidden", "false");
+
+      const anchor = document.getElementById(lastSettingsAnchor);
+      if (anchor) {
+        anchor.scrollIntoView({ block: "nearest" });
+      }
+
+      // Move focus into the modal for keyboard users
+      if (settingsCloseBtn) settingsCloseBtn.focus();
+    }
+
+    function closeSettingsModal() {
+      if (!settingsModal) return;
+      settingsModal.classList.remove("is-open");
+      settingsModal.setAttribute("aria-hidden", "true");
+    }
+
+    if (settingsCloseBtn) {
+      settingsCloseBtn.addEventListener("click", closeSettingsModal);
+    }
+
+    if (settingsModal) {
+      settingsModal.addEventListener("click", (event) => {
+        const target = event.target;
+        if (target && target.matches && target.matches("[data-modal-close]")) {
+          closeSettingsModal();
+        }
+      });
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && settingsModal && settingsModal.classList.contains("is-open")) {
+        closeSettingsModal();
+      }
+    });
+
+    function scheduleCompare() {
+      if (compareTimer) {
+        clearTimeout(compareTimer);
+      }
+      compareTimer = setTimeout(() => {
+        compareJson();
+      }, compareDebounceMs);
+    }
+
+    function clearDiffHighlights(editorSide) {
+      const editor = editorSide === "left" ? editors.left : editors.right;
+      const tracked = editorDiffHighlights[editorSide];
+      tracked.forEach((line) => {
+        editor.removeLineClass(line, "background", "line-diff-missing");
+        editor.removeLineClass(line, "background", "line-diff-addition");
+        editor.removeLineClass(line, "background", "line-diff-minor");
+        editor.removeLineClass(line, "background", "line-diff-modified");
+      });
+      tracked.clear();
+    }
+
+    function addDiffHighlight(editorSide, line, status) {
+      if (typeof line !== "number" || line < 0) return;
+      const editor = editorSide === "left" ? editors.left : editors.right;
+      const tracked = editorDiffHighlights[editorSide];
+
+      const className =
+        status === "missing" ? "line-diff-missing" :
+        status === "addition" ? "line-diff-addition" :
+        status === "minor" ? "line-diff-minor" :
+        status === "modified" ? "line-diff-modified" :
+        "";
+      if (!className) return;
+      editor.addLineClass(line, "background", className);
+      tracked.add(line);
+    }
+
+    function parsePath(path) {
+      const parts = [];
+      const regex = /([^.[\]]+)|\[(\d+)\]/g;
+      let match;
+      while ((match = regex.exec(path)) !== null) {
+        if (match[1] !== undefined) parts.push(match[1]);
+        else parts.push(Number(match[2]));
+      }
+      return parts;
+    }
+
+    function getLastKeyFromPath(path) {
+      const parts = parsePath(path);
+      for (let i = parts.length - 1; i >= 0; i--) {
+        if (typeof parts[i] === "string") return parts[i];
+      }
+      return null;
+    }
+
+    function findBestLineForKeyAndValue(editor, key, value) {
+      const lines = editor.getValue().split("\n");
+      const keyToken = key ? `"${key}"` : null;
+
+      const isPrimitive = (v) => v === null || ["string", "number", "boolean"].includes(typeof v);
+      const valueToken = isPrimitive(value) ? JSON.stringify(value) : null;
+
+      if (keyToken && valueToken) {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.includes(keyToken) && line.includes(valueToken)) return i;
+        }
+      }
+
+      if (keyToken && !valueToken) {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line.includes(keyToken)) continue;
+          if (line.includes("{") || line.includes("[")) return i;
+        }
+      }
+
+      if (keyToken) {
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(keyToken)) return i;
+        }
+      }
+
+      return null;
+    }
+
+    function applyDiffHighlightsFromEntries(entries) {
+      clearDiffHighlights("left");
+      clearDiffHighlights("right");
+
+      entries.forEach((entry) => {
+        const key = getLastKeyFromPath(entry.path);
+
+        if (entry.status === "missing") {
+          const line = findBestLineForKeyAndValue(editors.left, key, entry.oldValue);
+          if (line !== null) addDiffHighlight("left", line, "missing");
+          return;
+        }
+
+        if (entry.status === "addition") {
+          const line = findBestLineForKeyAndValue(editors.right, key, entry.newValue);
+          if (line !== null) addDiffHighlight("right", line, "addition");
+          return;
+        }
+
+        const leftLine = findBestLineForKeyAndValue(editors.left, key, entry.oldValue);
+        const rightLine = findBestLineForKeyAndValue(editors.right, key, entry.newValue);
+        if (leftLine !== null) addDiffHighlight("left", leftLine, entry.status);
+        if (rightLine !== null) addDiffHighlight("right", rightLine, entry.status);
+      });
     }
 
     function beautifyJSON(editor, editorSide) {
@@ -188,7 +352,7 @@
         showToast("Invalid JSON - cannot beautify", "error");
         return;
       }
-      const settings = getIndentSettings(editorSide);
+      const settings = getIndentSettings();
       const indent = settings.type === "tabs" ? "\t" : " ".repeat(settings.size);
       editor.setValue(JSON.stringify(parsed, null, indent));
       editor.setOption("indentUnit", settings.type === "tabs" ? 1 : settings.size);
@@ -285,28 +449,26 @@
       showToast("Editor cleared", "success");
     }
 
-    document.getElementById("compareBtn").addEventListener("click", () => {
-      compareJson();
-    });
+    // Auto-compare whenever either editor changes
+    editors.left.on("change", scheduleCompare);
+    editors.right.on("change", scheduleCompare);
 
-    sortKeysInput.addEventListener("change", () => {
-      if (lastLeftData) renderMerged(mergedOutput, lastLeftData, lastRightData, lastEntries, sortKeysInput.checked, keyCaseSelect.value);
-    });
-
-    keyCaseSelect.addEventListener("change", () => {
-      if (lastLeftData) renderMerged(mergedOutput, lastLeftData, lastRightData, lastEntries, sortKeysInput.checked, keyCaseSelect.value);
-    });
+    // Run an initial comparison for any prefilled content
+    scheduleCompare();
 
     function compareJson() {
       const leftData = tryParse(editors.left.getValue().trim());
       const rightData = tryParse(editors.right.getValue().trim());
       if (!leftData || !rightData) {
-        statusMessage.textContent = "Make sure both sides contain valid JSON to run the comparison.";
+        lastLeftData = null;
+        lastRightData = null;
+        lastEntries = null;
+        clearDiffHighlights("left");
+        clearDiffHighlights("right");
         return;
       }
-      statusMessage.textContent = "";
       const entries = diffObjects(leftData, rightData);
-      renderDiff(entries, leftData, rightData);
+      applyDiffHighlightsFromEntries(entries);
       lastLeftData = leftData;
       lastRightData = rightData;
       lastEntries = entries;
@@ -391,54 +553,6 @@
         return JSON.stringify(a) === JSON.stringify(b);
       }
       return false;
-    }
-
-    function renderDiff(entries, leftData, rightData) {
-      diffOutput.innerHTML = "";
-      mergedOutput.innerHTML = "";
-      if (!entries.length) {
-        summaryLine.textContent = "No differences detected.";
-        diffOutput.innerHTML = "<div class=\"diff-entry status-modified\">No textual delta found.</div>";
-        renderMerged(mergedOutput, leftData, rightData, entries, sortKeysInput.checked, keyCaseSelect.value);
-        return;
-      }
-      const counts = entries.reduce(
-        (acc, entry) => {
-          acc[entry.status] = (acc[entry.status] || 0) + 1;
-          return acc;
-        },
-        { missing: 0, addition: 0, minor: 0, modified: 0 }
-      );
-      summaryLine.textContent = `Missing ${counts.missing}, Added ${counts.addition}, Minor ${counts.minor}, Updates ${counts.modified}`;
-      renderMerged(mergedOutput, leftData, rightData, entries, sortKeysInput.checked, keyCaseSelect.value);
-      entries.forEach((entry) => {
-        const node = document.createElement("div");
-        node.classList.add("diff-entry", `status-${entry.status}`);
-        const pathLine = document.createElement("div");
-        pathLine.classList.add("diff-path");
-        pathLine.textContent = entry.path;
-        node.appendChild(pathLine);
-        const detail = document.createElement("div");
-        if (entry.status === "missing") {
-          detail.innerHTML = `<div class=\"value-line\">Missing value: ${escapeHtml(valueToString(entry.oldValue))}</div>`;
-        } else if (entry.status === "addition") {
-          detail.innerHTML = `<div class=\"value-line\">Added value: ${escapeHtml(valueToString(entry.newValue))}</div>`;
-        } else {
-          detail.innerHTML = `<div class=\"value-line\">Old: ${escapeHtml(valueToString(entry.oldValue))}</div><div class=\"value-line\">New: ${escapeHtml(valueToString(entry.newValue))}</div>`;
-        }
-        node.appendChild(detail);
-        diffOutput.appendChild(node);
-      });
-    }
-
-    function valueToString(value) {
-      if (typeof value === "undefined") {
-        return "(undefined)";
-      }
-      if (typeof value === "object") {
-        return JSON.stringify(value, null, 2);
-      }
-      return String(value);
     }
 
     function renderMerged(output, leftData, rightData, entries, sortKeys, keyCase) {

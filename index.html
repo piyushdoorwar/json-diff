@@ -31,14 +31,10 @@
         <div class="panel-head">
           <h2>Original JSON</h2>
           <div class="editor-controls-wrapper">
-            <div class="editor-indent-controls">
-              <input class="indent-size-input" data-editor="left" type="number" min="0" max="8" value="2" aria-label="Indent size" data-tooltip="Indent size" />
-              <select class="indent-type-select" data-editor="left" aria-label="Indent type" data-tooltip="Indent type">
-                <option value="spaces">Spaces</option>
-                <option value="tabs">Tabs</option>
-              </select>
-            </div>
             <div class="editor-toolbar">
+              <button class="icon-btn" data-action="settings" data-editor="left" aria-label="Settings" data-tooltip="Settings">
+                <i class="fas fa-gear"></i>
+              </button>
               <button class="icon-btn" data-action="beautify" data-editor="left" aria-label="Beautify JSON" data-tooltip="Beautify JSON">
                 <i class="fas fa-magic"></i>
               </button>
@@ -63,14 +59,10 @@
         <div class="panel-head">
           <h2>Modified JSON</h2>
           <div class="editor-controls-wrapper">
-            <div class="editor-indent-controls">
-              <input class="indent-size-input" data-editor="right" type="number" min="0" max="8" value="2" aria-label="Indent size" data-tooltip="Indent size" />
-              <select class="indent-type-select" data-editor="right" aria-label="Indent type" data-tooltip="Indent type">
-                <option value="spaces">Spaces</option>
-                <option value="tabs">Tabs</option>
-              </select>
-            </div>
             <div class="editor-toolbar">
+              <button class="icon-btn" data-action="settings" data-editor="right" aria-label="Settings" data-tooltip="Settings">
+                <i class="fas fa-gear"></i>
+              </button>
               <button class="icon-btn" data-action="beautify" data-editor="right" aria-label="Beautify JSON" data-tooltip="Beautify JSON">
                 <i class="fas fa-magic"></i>
               </button>
@@ -94,34 +86,6 @@
     </section>
 
     <section class="diff-panel">
-      <div class="diff-header">
-        <div>
-          <h3>Comparison</h3>
-          <div class="diff-summary" id="summaryLine">Awaiting comparison...</div>
-        </div>
-        <button id="compareBtn" class="compare-btn">Compare JSON</button>
-      </div>
-      <div id="statusMessage" class="diff-summary"></div>
-      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--text);">Merged JSON View</h4>
-      <div class="merged-controls">
-        <div class="control-group">
-          <label for="sortKeys">Sort keys</label>
-          <input type="checkbox" id="sortKeys">
-        </div>
-        <div class="control-group">
-          <label for="keyCase">Key casing</label>
-          <select id="keyCase">
-            <option value="none">None</option>
-            <option value="camel">camelCase</option>
-            <option value="pascal">PascalCase</option>
-            <option value="snake">snake_case</option>
-            <option value="kebab">kebab-case</option>
-            <option value="upper">UPPER_CASE</option>
-          </select>
-        </div>
-      </div>
-      <div id="mergedOutput" class="merged-editor"></div>
-      <div id="diffOutput" class="diff-output"></div>
       <div class="legend">
         <span><span class="legend-bullet" style="background: rgba(255, 107, 157, 0.22);"></span>Missing values</span>
         <span><span class="legend-bullet" style="background: rgba(0, 208, 156, 0.22);"></span>Added values</span>
@@ -130,6 +94,37 @@
       </div>
     </section>
   </main>
+
+  <div id="settingsModal" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-modal-close></div>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-header">
+        <h3 id="settingsTitle">Settings</h3>
+        <button id="settingsCloseBtn" class="icon-btn" aria-label="Close settings" data-tooltip="Close">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <section class="settings-section" id="settings-indent">
+          <h4>Indentation</h4>
+          <div class="settings-row">
+            <div class="control-group">
+              <label for="indentSize">Indent size</label>
+              <input id="indentSize" class="indent-size-input" type="number" min="0" max="8" value="2" aria-label="Indent size" />
+            </div>
+            <div class="control-group">
+              <label for="indentType">Indent type</label>
+              <select id="indentType" class="indent-type-select" aria-label="Indent type">
+                <option value="spaces">Spaces</option>
+                <option value="tabs">Tabs</option>
+              </select>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
 
   <div id="toast-container"></div>
   

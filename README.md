@@ -13,8 +13,8 @@ A sleek, desktop-optimized web application for comparing JSON documents with int
   - 🟠 **Structural updates** (orange)
 - **Code Editor Features**: Syntax highlighting, auto-close brackets, bracket matching, and line wrapping
 - **Responsive Design**: Optimized for desktop screens with a modern dark theme
-- **Merged JSON View**: Displays a unified JSON document with inline color coding for changes, plus options to sort keys alphabetically and transform key casing (camelCase, PascalCase, snake_case, kebab-case, UPPER_CASE)
-- **Comparison Timeline**: Detailed list of all differences with contextual information
+- **Inline Diff Highlighting**: Highlights missing, added, minor/time-based, and structural changes directly inside the two editors
+
 
 ## Usage
 
@@ -23,7 +23,7 @@ A sleek, desktop-optimized web application for comparing JSON documents with int
 3. Paste the modified JSON in the right editor
 4. Use the "Format" buttons to beautify individual editors or "Beautify both" for both
 5. Adjust indentation settings as needed (size and type)
-6. Click "Compare JSON" to see the differences
+6. The comparison updates automatically as you type or paste in either editor
 
 ## Project Structure
 
