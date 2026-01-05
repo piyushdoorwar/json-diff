@@ -1,137 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JSON Diff Studio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Diff Tool</title>
+    <link rel="icon" type="image/svg+xml" href="favicon-json-xml.svg" id="favicon">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main>
-    <header>
-      <h1>JSON Diff Studio</h1>
-      <p>
-        Track structural drift between two JSON documents, format both sides instantly, adjust indentation and
-        highlight missing, added, and time-sensitive values with clear color cues.
-      </p>
-    </header>
-
-    <section class="editor-grid">
-      <article class="editor-panel">
-        <div class="panel-head">
-          <h2>Original JSON</h2>
-          <div class="editor-controls-wrapper">
-            <div class="editor-toolbar">
-              <button class="icon-btn" data-action="settings" data-editor="left" aria-label="Settings" data-tooltip="Settings">
-                <i class="fas fa-gear"></i>
-              </button>
-              <button class="icon-btn" data-action="beautify" data-editor="left" aria-label="Beautify JSON" data-tooltip="Beautify JSON">
-                <i class="fas fa-magic"></i>
-              </button>
-              <button class="icon-btn" data-action="validate" data-editor="left" aria-label="Validate JSON" data-tooltip="Validate JSON">
-                <i class="fas fa-check-circle"></i>
-              </button>
-              <button class="icon-btn" data-action="copy" data-editor="left" aria-label="Copy" data-tooltip="Copy">
-                <i class="fas fa-copy"></i>
-              </button>
-              <button class="icon-btn" data-action="paste" data-editor="left" aria-label="Paste" data-tooltip="Paste">
-                <i class="fas fa-paste"></i>
-              </button>
-              <button class="icon-btn" data-action="clear" data-editor="left" aria-label="Clear" data-tooltip="Clear">
-                <i class="fas fa-trash"></i>
-              </button>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="app-title">JSON Diff Tool</h1>
             </div>
-          </div>
+            <div class="header-right">
+                <button class="settings-btn" id="settings-btn" aria-label="Settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001 1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel -->
+            <div class="editor-panel left-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Original JSON</h2>
+                    <div class="action-bar">
+                        <button class="action-btn" data-action="validate" data-editor="left" aria-label="Validate" data-tooltip="Validate">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" data-action="beautify" data-editor="left" aria-label="Beautify" data-tooltip="Beautify">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="17" y1="10" x2="3" y2="10"/>
+                                <line x1="21" y1="6" x2="3" y2="6"/>
+                                <line x1="21" y1="14" x2="3" y2="14"/>
+                                <line x1="17" y1="18" x2="3" y2="18"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" data-action="copy" data-editor="left" aria-label="Copy" data-tooltip="Copy">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" data-action="paste" data-editor="left" aria-label="Paste" data-tooltip="Paste">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/>
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" data-action="clear" data-editor="left" aria-label="Clear" data-tooltip="Clear">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="code-editor-wrapper">
+                        <div class="line-numbers" id="left-line-numbers"></div>
+                        <div class="editor-textarea" id="jsonA" contenteditable="true" spellcheck="false" data-placeholder="Enter original JSON here..."></div>
+                    </div>
+                    <div class="status-bar">
+                        <span class="status-text">Ready</span>
+                        <span class="char-count">0 characters</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="editor-panel right-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Modified JSON</h2>
+                    <div class="action-bar">
+                        <button class="action-btn" data-action="validate" data-editor="right" aria-label="Validate" data-tooltip="Validate">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" data-action="beautify" data-editor="right" aria-label="Beautify" data-tooltip="Beautify">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="17" y1="10" x2="3" y2="10"/>
+                                <line x1="21" y1="6" x2="3" y2="6"/>
+                                <line x1="21" y1="14" x2="3" y2="14"/>
+                                <line x1="17" y1="18" x2="3" y2="18"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" data-action="copy" data-editor="right" aria-label="Copy" data-tooltip="Copy">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" data-action="paste" data-editor="right" aria-label="Paste" data-tooltip="Paste">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/>
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn" data-action="clear" data-editor="right" aria-label="Clear" data-tooltip="Clear">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="code-editor-wrapper">
+                        <div class="line-numbers" id="right-line-numbers"></div>
+                        <div class="editor-textarea" id="jsonB" contenteditable="true" spellcheck="false" data-placeholder="Enter modified JSON here..."></div>
+                    </div>
+                    <div class="status-bar">
+                        <span class="status-text">Ready</span>
+                        <span class="char-count">0 characters</span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <textarea id="jsonA" spellcheck="false" placeholder="Paste or type the base JSON here..."></textarea>
-      </article>
-      <article class="editor-panel">
-        <div class="panel-head">
-          <h2>Modified JSON</h2>
-          <div class="editor-controls-wrapper">
-            <div class="editor-toolbar">
-              <button class="icon-btn" data-action="settings" data-editor="right" aria-label="Settings" data-tooltip="Settings">
-                <i class="fas fa-gear"></i>
-              </button>
-              <button class="icon-btn" data-action="beautify" data-editor="right" aria-label="Beautify JSON" data-tooltip="Beautify JSON">
-                <i class="fas fa-magic"></i>
-              </button>
-              <button class="icon-btn" data-action="validate" data-editor="right" aria-label="Validate JSON" data-tooltip="Validate JSON">
-                <i class="fas fa-check-circle"></i>
-              </button>
-              <button class="icon-btn" data-action="copy" data-editor="right" aria-label="Copy" data-tooltip="Copy">
-                <i class="fas fa-copy"></i>
-              </button>
-              <button class="icon-btn" data-action="paste" data-editor="right" aria-label="Paste" data-tooltip="Paste">
-                <i class="fas fa-paste"></i>
-              </button>
-              <button class="icon-btn" data-action="clear" data-editor="right" aria-label="Clear" data-tooltip="Clear">
-                <i class="fas fa-trash"></i>
-              </button>
+
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal" aria-hidden="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Settings</h3>
+                    <button id="settingsCloseBtn" class="close-btn" aria-label="Close settings">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h4 id="settings-indent">Indentation</h4>
+                        <div class="setting-item">
+                            <label for="indentSize">Indent Size:</label>
+                            <input type="number" id="indentSize" min="1" max="8" value="2">
+                        </div>
+                        <div class="setting-item">
+                            <label for="indentType">Indent Type:</label>
+                            <select id="indentType">
+                                <option value="spaces">Spaces</option>
+                                <option value="tabs">Tabs</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-        <textarea id="jsonB" spellcheck="false" placeholder="Add the new JSON that should be compared..."></textarea>
-      </article>
-    </section>
-
-    <section class="diff-panel">
-      <div class="legend">
-        <span><span class="legend-bullet" style="background: rgba(255, 107, 157, 0.22);"></span>Missing values</span>
-        <span><span class="legend-bullet" style="background: rgba(0, 208, 156, 0.22);"></span>Added values</span>
-        <span><span class="legend-bullet" style="background: rgba(93, 173, 226, 0.22);"></span>Minor/time-based differences</span>
-        <span><span class="legend-bullet" style="background: rgba(255, 215, 0, 0.18);"></span>Structural updates</span>
-      </div>
-    </section>
-  </main>
-
-  <div id="settingsModal" class="modal" aria-hidden="true">
-    <div class="modal-overlay" data-modal-close></div>
-    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <div class="modal-header">
-        <h3 id="settingsTitle">Settings</h3>
-        <button id="settingsCloseBtn" class="icon-btn" aria-label="Close settings" data-tooltip="Close">
-          <i class="fas fa-xmark"></i>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <section class="settings-section" id="settings-indent">
-          <h4>Indentation</h4>
-          <div class="settings-row">
-            <div class="control-group">
-              <label for="indentSize">Indent size</label>
-              <input id="indentSize" class="indent-size-input" type="number" min="0" max="8" value="2" aria-label="Indent size" />
-            </div>
-            <div class="control-group">
-              <label for="indentType">Indent type</label>
-              <select id="indentType" class="indent-type-select" aria-label="Indent type">
-                <option value="spaces">Spaces</option>
-                <option value="tabs">Tabs</option>
-              </select>
-            </div>
-          </div>
-        </section>
-      </div>
     </div>
-  </div>
 
-  <div id="toast-container"></div>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
-  <script src="script.js"></script>
-
-  <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "e9cd556fb46f4880a8842d37e2dfe3fb"}'></script><!-- End Cloudflare Web Analytics -->
+    <script src="script.js"></script>
 </body>
 </html>
