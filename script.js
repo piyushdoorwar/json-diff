@@ -1,106 +1,248 @@
+// JSON Diff Tool - Custom Editor Implementation (No CodeMirror)
+
+// DOM Elements
 const editors = {
-  left: document.getElementById("jsonA"),
-  right: document.getElementById("jsonB"),
+  left: document.getElementById("left-editor"),
+  right: document.getElementById("right-editor"),
 };
+
+const lineNumbers = {
+  left: document.getElementById("left-line-numbers"),
+  right: document.getElementById("right-line-numbers"),
+};
+
+const highlights = {
+  left: document.getElementById("left-highlights"),
+  right: document.getElementById("right-highlights"),
+};
+
+const statusBars = {
+  left: document.getElementById("left-status"),
+  right: document.getElementById("right-status"),
+};
+
 const toastContainer = document.getElementById("toast-container");
 const settingsModal = document.getElementById("settingsModal");
 const settingsCloseBtn = document.getElementById("settingsCloseBtn");
 const indentSizeInput = document.getElementById("indentSize");
 const indentTypeSelect = document.getElementById("indentType");
 
+// Stats elements
+const statAdded = document.getElementById("stat-added");
+const statRemoved = document.getElementById("stat-removed");
+const statModified = document.getElementById("stat-modified");
+
+// State
 let lastLeftData, lastRightData, lastEntries;
 let compareTimer;
-const compareDebounceMs = 250;
-let lastSettingsAnchor = "settings-indent";
+const compareDebounceMs = 300;
 
 const editorDiffHighlights = {
-  left: new Set(),
-  right: new Set(),
+  left: new Map(),
+  right: new Map(),
 };
 
-// Toast notification function
+// Sample JSON data
+const sampleOriginal = {
+  user: {
+    id: 12345,
+    username: "johndoe",
+    email: "john@example.com",
+    profile: {
+      firstName: "John",
+      lastName: "Doe",
+      age: 28,
+      location: "New York"
+    },
+    settings: {
+      theme: "dark",
+      notifications: true,
+      language: "en"
+    },
+    lastLogin: "2025-12-29T14:32:15Z",
+    createdAt: "2023-01-15T08:00:00Z"
+  },
+  subscription: {
+    plan: "basic",
+    status: "active",
+    price: 9.99
+  },
+  features: ["email", "chat", "storage"]
+};
+
+const sampleModified = {
+  user: {
+    id: 12345,
+    username: "johndoe_updated",
+    email: "john.doe@newdomain.com",
+    profile: {
+      firstName: "John",
+      lastName: "Doe",
+      age: 29,
+      location: "San Francisco",
+      bio: "Software Developer"
+    },
+    settings: {
+      theme: "light",
+      notifications: true,
+      privacy: "public"
+    },
+    lastLogin: "2025-12-30T10:15:42Z",
+    updatedAt: "2025-12-30T10:15:42Z"
+  },
+  subscription: {
+    plan: "premium",
+    status: "active",
+    price: 19.99,
+    renewalDate: "2026-01-30"
+  },
+  features: ["email", "chat", "storage", "analytics", "api-access"]
+};
+
+// ==================== Toast Notifications ====================
+
 function showToast(message, type = "info") {
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;
   
-  let iconClass = "fa-info-circle";
-  if (type === "success") iconClass = "fa-check-circle";
-  else if (type === "error") iconClass = "fa-exclamation-circle";
+  let icon = "ℹ";
+  if (type === "success") icon = "✓";
+  else if (type === "error") icon = "✕";
   
   toast.innerHTML = `
-    <i class="fas ${iconClass} toast-icon"></i>
-    <div class="toast-message">${message}</div>
+    <span class="toast-icon">${icon}</span>
+    <span class="toast-message">${message}</span>
   `;
   
   toastContainer.appendChild(toast);
   
+  // Trigger animation
+  requestAnimationFrame(() => {
+    toast.classList.add("show");
+  });
+  
   setTimeout(() => {
-    toast.style.animation = "slideOut 0.3s ease";
+    toast.classList.remove("show");
+    toast.classList.add("hide");
     setTimeout(() => toast.remove(), 300);
   }, 3000);
 }
 
-// Load sample JSON on initialization
-const sampleOriginal = {
-  "user": {
-    "id": 12345,
-    "username": "johndoe",
-    "email": "john@example.com",
-    "profile": {
-      "firstName": "John",
-      "lastName": "Doe",
-      "age": 28,
-      "location": "New York"
-    },
-    "settings": {
-      "theme": "dark",
-      "notifications": true,
-      "language": "en"
-    },
-    "lastLogin": "2025-12-29T14:32:15Z",
-    "createdAt": "2023-01-15T08:00:00Z"
-  },
-  "subscription": {
-    "plan": "basic",
-    "status": "active",
-    "price": 9.99
-  },
-  "features": ["email", "chat", "storage"]
-};
+// ==================== Line Numbers ====================
 
-const sampleModified = {
-  "user": {
-    "id": 12345,
-    "username": "johndoe_updated",
-    "email": "john.doe@newdomain.com",
-    "profile": {
-      "firstName": "John",
-      "lastName": "Doe",
-      "age": 29,
-      "location": "San Francisco",
-      "bio": "Software Developer"
-    },
-    "settings": {
-      "theme": "light",
-      "notifications": true,
-      "privacy": "public"
-    },
-    "lastLogin": "2025-12-30T10:15:42Z",
-    "updatedAt": "2025-12-30T10:15:42Z"
-  },
-  "subscription": {
-    "plan": "premium",
-    "status": "active",
-    "price": 19.99,
-    "renewalDate": "2026-01-30"
-  },
-  "features": ["email", "chat", "storage", "analytics", "api-access"]
-};
+function updateLineNumbers(side) {
+  const editor = editors[side];
+  const lineNumbersEl = lineNumbers[side];
+  const lines = editor.value.split("\n");
+  const lineCount = lines.length;
+  
+  let html = "";
+  for (let i = 1; i <= lineCount; i++) {
+    const diffClass = editorDiffHighlights[side].get(i - 1) || "";
+    html += `<span class="line-number ${diffClass}">${i}</span>`;
+  }
+  
+  lineNumbersEl.innerHTML = html;
+}
 
-editors.left.textContent = JSON.stringify(sampleOriginal, null, 2);
-editors.right.textContent = JSON.stringify(sampleModified, null, 2);
+// ==================== Syntax Highlighting & Diff Overlay ====================
 
-// Indent settings (applies to both editors)
+function updateHighlights(side) {
+  const editor = editors[side];
+  const highlightsEl = highlights[side];
+  const lines = editor.value.split("\n");
+  
+  let html = "";
+  lines.forEach((line, index) => {
+    const diffClass = editorDiffHighlights[side].get(index) || "";
+    const escapedLine = escapeHtml(line) || " ";
+    html += `<div class="highlight-line ${diffClass}">${escapedLine}</div>`;
+  });
+  
+  highlightsEl.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// ==================== Scroll Sync ====================
+
+function syncScroll(side) {
+  const editor = editors[side];
+  const lineNumbersEl = lineNumbers[side];
+  const highlightsEl = highlights[side];
+  
+  lineNumbersEl.scrollTop = editor.scrollTop;
+  highlightsEl.scrollTop = editor.scrollTop;
+  highlightsEl.scrollLeft = editor.scrollLeft;
+}
+
+// ==================== Editor Value Helpers ====================
+
+function getValue(side) {
+  return editors[side].value;
+}
+
+function setValue(side, value) {
+  editors[side].value = value;
+  updateLineNumbers(side);
+  updateHighlights(side);
+  updateStatus(side);
+}
+
+// ==================== Status Bar ====================
+
+function updateStatus(side, message = null, type = null) {
+  const statusBar = statusBars[side];
+  const statusText = statusBar.querySelector(".status-text");
+  const charCount = statusBar.querySelector(".char-count");
+  
+  const value = getValue(side);
+  charCount.textContent = `${value.length} characters`;
+  
+  if (message) {
+    statusText.textContent = message;
+    statusText.className = `status-text ${type || ""}`;
+  } else {
+    // Check if valid JSON
+    const parsed = tryParse(value.trim());
+    if (!value.trim()) {
+      statusText.textContent = "Ready";
+      statusText.className = "status-text";
+    } else if (parsed) {
+      statusText.textContent = "Valid JSON";
+      statusText.className = "status-text success";
+    } else {
+      statusText.textContent = "Invalid JSON";
+      statusText.className = "status-text error";
+    }
+  }
+}
+
+// ==================== Diff Statistics ====================
+
+function updateDiffStats(entries) {
+  let added = 0, removed = 0, modified = 0;
+  
+  entries.forEach(entry => {
+    if (entry.status === "addition") added++;
+    else if (entry.status === "missing") removed++;
+    else if (entry.status === "modified" || entry.status === "minor") modified++;
+  });
+  
+  statAdded.textContent = added;
+  statRemoved.textContent = removed;
+  statModified.textContent = modified;
+}
+
+// ==================== Indent Settings ====================
+
 function getIndentSettings() {
   return {
     size: Number(indentSizeInput?.value) || 2,
@@ -108,93 +250,140 @@ function getIndentSettings() {
   };
 }
 
-function applyIndentSettingsToEditors(reformat = true) {
+function getIndentString() {
   const settings = getIndentSettings();
-  const indent = settings.type === "tabs" ? "\t" : " ".repeat(settings.size);
-
-  [editors.left, editors.right].forEach((editor) => {
-    if (!reformat) return;
-    const value = editor.textContent.trim();
-    if (!value) return;
-    const parsed = tryParse(value);
-    if (!parsed) return;
-    editor.textContent = JSON.stringify(parsed, null, indent);
-  });
+  return settings.type === "tabs" ? "\t" : " ".repeat(settings.size);
 }
 
-[indentSizeInput, indentTypeSelect].filter(Boolean).forEach((control) => {
-  control.addEventListener("change", () => {
-    applyIndentSettingsToEditors(true);
-    scheduleCompare();
-  });
-});
+// ==================== JSON Parsing ====================
 
-// Action button event handlers
-document.querySelectorAll(".action-btn[data-action]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const action = btn.dataset.action;
-    const editorSide = btn.dataset.editor;
-    const editor = editorSide === "left" ? editors.left : editors.right;
+function tryParse(value) {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    return null;
+  }
+}
+
+// ==================== JSON Actions ====================
+
+function beautifyJSON(side) {
+  const value = getValue(side).trim();
+  if (!value) {
+    showToast("No JSON to beautify", "error");
+    return;
+  }
+  
+  const parsed = tryParse(value);
+  if (!parsed) {
+    showToast("Invalid JSON - cannot beautify", "error");
+    return;
+  }
+  
+  const indent = getIndentString();
+  setValue(side, JSON.stringify(parsed, null, indent));
+  showToast("JSON beautified successfully", "success");
+  scheduleCompare();
+}
+
+function minifyJSON(side) {
+  const value = getValue(side).trim();
+  if (!value) {
+    showToast("No JSON to minify", "error");
+    return;
+  }
+  
+  const parsed = tryParse(value);
+  if (!parsed) {
+    showToast("Invalid JSON - cannot minify", "error");
+    return;
+  }
+  
+  setValue(side, JSON.stringify(parsed));
+  showToast("JSON minified successfully", "success");
+  scheduleCompare();
+}
+
+function validateJSON(side) {
+  const value = getValue(side).trim();
+  if (!value) {
+    showToast("No JSON to validate", "error");
+    return;
+  }
+  
+  try {
+    JSON.parse(value);
+    showToast("Valid JSON ✓", "success");
+    updateStatus(side, "Valid JSON", "success");
+  } catch (error) {
+    // Try to find line number
+    const lineMatch = error.message.match(/position (\d+)/);
+    let lineNum = null;
     
-    switch (action) {
-      case "beautify":
-        beautifyJSON(editor, editorSide);
-        break;
-      case "validate":
-        validateJSON(editor);
-        break;
-      case "copy":
-        copyJSON(editor);
-        break;
-      case "paste":
-        pasteJSON(editor);
-        break;
-      case "clear":
-        clearJSON(editor);
-        break;
+    if (lineMatch) {
+      const position = parseInt(lineMatch[1]);
+      const beforeError = value.substring(0, position);
+      lineNum = beforeError.split('\n').length;
     }
-  });
-});
-
-function openSettingsModal(editorSide = "left") {
-  if (!settingsModal) return;
-  lastSettingsAnchor = "settings-indent";
-  settingsModal.classList.add("is-open");
-  settingsModal.setAttribute("aria-hidden", "false");
-
-  const anchor = document.getElementById(lastSettingsAnchor);
-  if (anchor) {
-    anchor.scrollIntoView({ block: "nearest" });
+    
+    if (lineNum) {
+      showToast(`Invalid JSON - Error on line ${lineNum}`, "error");
+      updateStatus(side, `Error on line ${lineNum}`, "error");
+    } else {
+      showToast(`Invalid JSON - ${error.message}`, "error");
+      updateStatus(side, "Invalid JSON", "error");
+    }
   }
-
-  // Move focus into the modal for keyboard users
-  if (settingsCloseBtn) settingsCloseBtn.focus();
 }
 
-function closeSettingsModal() {
-  if (!settingsModal) return;
-  settingsModal.classList.remove("is-open");
-  settingsModal.setAttribute("aria-hidden", "true");
-}
-
-if (settingsCloseBtn) {
-  settingsCloseBtn.addEventListener("click", closeSettingsModal);
-}
-
-if (settingsModal) {
-  settingsModal.addEventListener("click", (event) => {
-    const target = event.target;
-    if (target && target.matches && target.matches("[data-modal-close]")) {
-      closeSettingsModal();
-    }
+function copyJSON(side) {
+  const value = getValue(side);
+  if (!value.trim()) {
+    showToast("Nothing to copy", "error");
+    return;
+  }
+  
+  navigator.clipboard.writeText(value).then(() => {
+    showToast("Copied to clipboard", "success");
+  }).catch(() => {
+    showToast("Failed to copy", "error");
   });
 }
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && settingsModal && settingsModal.classList.contains("is-open")) {
-    closeSettingsModal();
+function pasteJSON(side) {
+  navigator.clipboard.readText().then((text) => {
+    if (!text) {
+      showToast("Clipboard is empty", "error");
+      return;
+    }
+    setValue(side, text);
+    showToast("Pasted from clipboard", "success");
+    scheduleCompare();
+  }).catch(() => {
+    showToast("Failed to paste - clipboard access denied", "error");
+  });
+}
+
+function clearJSON(side) {
+  if (!getValue(side).trim()) {
+    showToast("Already empty", "info");
+    return;
   }
-});
+  setValue(side, "");
+  showToast("Editor cleared", "success");
+  scheduleCompare();
+}
+
+function loadSample(side) {
+  const indent = getIndentString();
+  const sample = side === "left" ? sampleOriginal : sampleModified;
+  setValue(side, JSON.stringify(sample, null, indent));
+  showToast("Sample loaded", "success");
+  scheduleCompare();
+}
+
+// ==================== Diff Comparison ====================
 
 function scheduleCompare() {
   if (compareTimer) {
@@ -205,26 +394,52 @@ function scheduleCompare() {
   }, compareDebounceMs);
 }
 
-function clearDiffHighlights(editorSide) {
-  const lineNumbers = editorSide === "left" ? document.getElementById("left-line-numbers") : document.getElementById("right-line-numbers");
-  const lines = lineNumbers.querySelectorAll('.line-number');
-  lines.forEach((line) => {
-    line.classList.remove("line-diff-missing", "line-diff-addition", "line-diff-minor", "line-diff-modified");
-  });
+function compareJson() {
+  const leftValue = getValue("left").trim();
+  const rightValue = getValue("right").trim();
+  
+  const leftData = tryParse(leftValue);
+  const rightData = tryParse(rightValue);
+  
+  // Clear highlights if either is invalid or empty
+  if (!leftData || !rightData) {
+    clearDiffHighlights("left");
+    clearDiffHighlights("right");
+    updateLineNumbers("left");
+    updateLineNumbers("right");
+    updateHighlights("left");
+    updateHighlights("right");
+    updateDiffStats([]);
+    lastLeftData = null;
+    lastRightData = null;
+    lastEntries = null;
+    return;
+  }
+  
+  const entries = diffObjects(leftData, rightData);
+  applyDiffHighlightsFromEntries(entries, leftValue, rightValue);
+  updateDiffStats(entries);
+  
+  lastLeftData = leftData;
+  lastRightData = rightData;
+  lastEntries = entries;
 }
 
-function addDiffHighlight(editorSide, line, status) {
-  if (typeof line !== "number" || line < 0) return;
-  const lineNumbers = editorSide === "left" ? document.getElementById("left-line-numbers") : document.getElementById("right-line-numbers");
-  const lines = lineNumbers.querySelectorAll('.line-number');
-  if (lines[line]) {
-    const className =
-      status === "missing" ? "line-diff-missing" :
-      status === "addition" ? "line-diff-addition" :
-      status === "minor" ? "line-diff-minor" :
-      status === "modified" ? "line-diff-modified" :
-      "";
-    if (className) lines[line].classList.add(className);
+function clearDiffHighlights(side) {
+  editorDiffHighlights[side].clear();
+}
+
+function addDiffHighlight(side, lineIndex, status) {
+  if (typeof lineIndex !== "number" || lineIndex < 0) return;
+  
+  const className =
+    status === "missing" ? "line-diff-missing" :
+    status === "addition" ? "line-diff-addition" :
+    status === "minor" ? "line-diff-minor" :
+    status === "modified" ? "line-diff-modified" : "";
+  
+  if (className) {
+    editorDiffHighlights[side].set(lineIndex, className);
   }
 }
 
@@ -247,20 +462,20 @@ function getLastKeyFromPath(path) {
   return null;
 }
 
-function findBestLineForKeyAndValue(editor, key, value) {
-  const lines = editor.textContent.split("\n");
+function findBestLineForKeyAndValue(content, key, value) {
+  const lines = content.split("\n");
   const keyToken = key ? `"${key}"` : null;
-
+  
   const isPrimitive = (v) => v === null || ["string", "number", "boolean"].includes(typeof v);
   const valueToken = isPrimitive(value) ? JSON.stringify(value) : null;
-
+  
   if (keyToken && valueToken) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (line.includes(keyToken) && line.includes(valueToken)) return i;
     }
   }
-
+  
   if (keyToken && !valueToken) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -268,162 +483,58 @@ function findBestLineForKeyAndValue(editor, key, value) {
       if (line.includes("{") || line.includes("[")) return i;
     }
   }
-
+  
   if (keyToken) {
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].includes(keyToken)) return i;
     }
   }
-
+  
   return null;
 }
 
-function applyDiffHighlightsFromEntries(entries) {
+function applyDiffHighlightsFromEntries(entries, leftContent, rightContent) {
   clearDiffHighlights("left");
   clearDiffHighlights("right");
-
+  
   entries.forEach((entry) => {
     const key = getLastKeyFromPath(entry.path);
-
+    
     if (entry.status === "missing") {
-      const line = findBestLineForKeyAndValue(editors.left, key, entry.oldValue);
+      const line = findBestLineForKeyAndValue(leftContent, key, entry.oldValue);
       if (line !== null) addDiffHighlight("left", line, "missing");
       return;
     }
-
+    
     if (entry.status === "addition") {
-      const line = findBestLineForKeyAndValue(editors.right, key, entry.newValue);
+      const line = findBestLineForKeyAndValue(rightContent, key, entry.newValue);
       if (line !== null) addDiffHighlight("right", line, "addition");
       return;
     }
-
-    const leftLine = findBestLineForKeyAndValue(editors.left, key, entry.oldValue);
-    const rightLine = findBestLineForKeyAndValue(editors.right, key, entry.newValue);
+    
+    const leftLine = findBestLineForKeyAndValue(leftContent, key, entry.oldValue);
+    const rightLine = findBestLineForKeyAndValue(rightContent, key, entry.newValue);
     if (leftLine !== null) addDiffHighlight("left", leftLine, entry.status);
     if (rightLine !== null) addDiffHighlight("right", rightLine, entry.status);
   });
-}
-
-function beautifyJSON(editor, editorSide) {
-  const value = editor.textContent.trim();
-  if (!value) {
-    showToast("No JSON to beautify", "error");
-    return;
-  }
-  const parsed = tryParse(value);
-  if (!parsed) {
-    showToast("Invalid JSON - cannot beautify", "error");
-    return;
-  }
-  const settings = getIndentSettings();
-  const indent = settings.type === "tabs" ? "\t" : " ".repeat(settings.size);
-  editor.textContent = JSON.stringify(parsed, null, indent);
-  updateLineNumbers(editorSide === "left" ? "jsonA" : "jsonB");
-  showToast("JSON beautified successfully", "success");
-}
-
-function validateJSON(editor) {
-  const value = editor.textContent.trim();
-  if (!value) {
-    showToast("No JSON to validate", "error");
-    return;
-  }
   
-  try {
-    JSON.parse(value);
-    showToast("Valid JSON ✓", "success");
-  } catch (error) {
-    showToast(`Invalid JSON - ${error.message}`, "error");
-  }
-}
-
-function copyJSON(editor) {
-  const value = editor.textContent;
-  if (!value.trim()) {
-    showToast("Nothing to copy", "error");
-    return;
-  }
-  navigator.clipboard.writeText(value).then(() => {
-    showToast("Copied to clipboard", "success");
-  }).catch(() => {
-    showToast("Failed to copy", "error");
-  });
-}
-
-function pasteJSON(editor) {
-  navigator.clipboard.readText().then((text) => {
-    if (!text) {
-      showToast("Clipboard is empty", "error");
-      return;
-    }
-    const editorId = event.target.closest('.editor-panel').querySelector('.editor-textarea').id;
-    document.getElementById(editorId).textContent = text;
-    updateLineNumbers(editorId);
-    showToast("Pasted from clipboard", "success");
-  }).catch(() => {
-    showToast("Failed to paste - clipboard access denied", "error");
-  });
-}
-
-function clearJSON(editor) {
-  if (!editor.textContent.trim()) {
-    showToast("Already empty", "info");
-    return;
-  }
-  editor.textContent = "";
-  updateLineNumbers(editor.id);
-  showToast("Editor cleared", "success");
-}
-
-// Auto-compare whenever either editor changes
-editors.left.addEventListener("input", () => {
-  updateLineNumbers('jsonA');
-  scheduleCompare();
-});
-editors.right.addEventListener("input", () => {
-  updateLineNumbers('jsonB');
-  scheduleCompare();
-});
-
-// Run an initial comparison for any prefilled content
-scheduleCompare();
-
-function compareJson() {
-  const leftData = tryParse(editors.left.textContent.trim());
-  const rightData = tryParse(editors.right.textContent.trim());
-  if (!leftData || !rightData) {
-    lastLeftData = null;
-    lastRightData = null;
-    lastEntries = null;
-    clearDiffHighlights("left");
-    clearDiffHighlights("right");
-    return;
-  }
-  const entries = diffObjects(leftData, rightData);
-  applyDiffHighlightsFromEntries(entries);
-  lastLeftData = leftData;
-  lastRightData = rightData;
-  lastEntries = entries;
-}
-
-function tryParse(value) {
-  if (!value) {
-    return null;
-  }
-  try {
-    return JSON.parse(value);
-  } catch (err) {
-    return null;
-  }
+  updateLineNumbers("left");
+  updateLineNumbers("right");
+  updateHighlights("left");
+  updateHighlights("right");
 }
 
 function diffObjects(left, right, path = "") {
   const results = [];
+  
   if (isObject(left) && isObject(right)) {
-    new Set([...Object.keys(left), ...Object.keys(right)]).forEach((key) => {
+    const allKeys = new Set([...Object.keys(left), ...Object.keys(right)]);
+    
+    allKeys.forEach((key) => {
       const currentPath = path ? `${path}.${key}` : key;
       const hasLeft = Object.prototype.hasOwnProperty.call(left, key);
       const hasRight = Object.prototype.hasOwnProperty.call(right, key);
+      
       if (hasLeft && !hasRight) {
         results.push({
           path: currentPath,
@@ -439,6 +550,7 @@ function diffObjects(left, right, path = "") {
       } else {
         const leftVal = left[key];
         const rightVal = right[key];
+        
         if (isObject(leftVal) && isObject(rightVal) && !Array.isArray(leftVal) && !Array.isArray(rightVal)) {
           results.push(...diffObjects(leftVal, rightVal, currentPath));
         } else if (!isEqual(leftVal, rightVal)) {
@@ -453,23 +565,29 @@ function diffObjects(left, right, path = "") {
       }
     });
   }
+  
   return results;
 }
 
 function markAsMinor(path, oldValue, newValue) {
   const minimals = ["time", "date", "timestamp", "updated", "created", "last", "expires", "logged"];
   const normalized = path.toLowerCase();
+  
   if (minimals.some((token) => normalized.includes(token))) {
     return true;
   }
+  
   const stringValue = (value) => (typeof value === "string" ? value : "");
   const dateish = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+  
   if (dateish.test(stringValue(oldValue)) && dateish.test(stringValue(newValue))) {
     return true;
   }
+  
   if (typeof oldValue === "number" && typeof newValue === "number") {
     return Math.abs(oldValue - newValue) < 1;
   }
+  
   return false;
 }
 
@@ -478,32 +596,137 @@ function isObject(value) {
 }
 
 function isEqual(a, b) {
-  if (a === b) {
-    return true;
-  }
+  if (a === b) return true;
   if (isObject(a) && isObject(b)) {
     return JSON.stringify(a) === JSON.stringify(b);
   }
   return false;
 }
 
-// Initialize line numbers
-function updateLineNumbers(editorId) {
-  const editor = document.getElementById(editorId);
-  const lineNumbers = document.getElementById(editorId === 'jsonA' ? 'left-line-numbers' : 'right-line-numbers');
-  const lines = editor.textContent.split('\n').length;
-  lineNumbers.innerHTML = '';
-  for (let i = 1; i <= lines; i++) {
-    const div = document.createElement('div');
-    div.className = 'line-number';
-    div.textContent = i;
-    lineNumbers.appendChild(div);
-  }
+// ==================== Event Handlers ====================
+
+// Action button handlers
+document.querySelectorAll(".action-btn[data-action]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const action = btn.dataset.action;
+    const side = btn.dataset.editor;
+    
+    switch (action) {
+      case "validate":
+        validateJSON(side);
+        break;
+      case "beautify":
+        beautifyJSON(side);
+        break;
+      case "minify":
+        minifyJSON(side);
+        break;
+      case "copy":
+        copyJSON(side);
+        break;
+      case "paste":
+        pasteJSON(side);
+        break;
+      case "sample":
+        loadSample(side);
+        break;
+      case "clear":
+        clearJSON(side);
+        break;
+    }
+  });
+});
+
+// Editor input handlers
+["left", "right"].forEach((side) => {
+  const editor = editors[side];
+  
+  editor.addEventListener("input", () => {
+    updateLineNumbers(side);
+    updateHighlights(side);
+    updateStatus(side);
+    scheduleCompare();
+  });
+  
+  editor.addEventListener("scroll", () => {
+    syncScroll(side);
+  });
+  
+  // Handle tab key for indentation
+  editor.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const indent = getIndentString();
+      
+      editor.value = editor.value.substring(0, start) + indent + editor.value.substring(end);
+      editor.selectionStart = editor.selectionEnd = start + indent.length;
+      
+      updateLineNumbers(side);
+      updateHighlights(side);
+    }
+  });
+});
+
+// Settings modal handlers
+if (settingsCloseBtn) {
+  settingsCloseBtn.addEventListener("click", closeSettingsModal);
 }
 
-// Initial line numbers
-updateLineNumbers('jsonA');
-updateLineNumbers('jsonB');
+if (settingsModal) {
+  settingsModal.addEventListener("click", (event) => {
+    if (event.target.matches("[data-modal-close]") || event.target === settingsModal) {
+      closeSettingsModal();
+    }
+  });
+}
 
-// Settings button
-document.getElementById('settings-btn').addEventListener('click', () => openSettingsModal());
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && settingsModal?.classList.contains("is-open")) {
+    closeSettingsModal();
+  }
+});
+
+function openSettingsModal() {
+  if (!settingsModal) return;
+  settingsModal.classList.add("is-open");
+  settingsModal.setAttribute("aria-hidden", "false");
+  if (settingsCloseBtn) settingsCloseBtn.focus();
+}
+
+function closeSettingsModal() {
+  if (!settingsModal) return;
+  settingsModal.classList.remove("is-open");
+  settingsModal.setAttribute("aria-hidden", "true");
+}
+
+// Indent settings change handlers
+[indentSizeInput, indentTypeSelect].filter(Boolean).forEach((control) => {
+  control.addEventListener("change", () => {
+    // Optionally reformat both editors
+    ["left", "right"].forEach((side) => {
+      const value = getValue(side).trim();
+      if (!value) return;
+      const parsed = tryParse(value);
+      if (!parsed) return;
+      setValue(side, JSON.stringify(parsed, null, getIndentString()));
+    });
+    scheduleCompare();
+  });
+});
+
+// ==================== Initialization ====================
+
+function init() {
+  // Load sample data on startup
+  const indent = getIndentString();
+  setValue("left", JSON.stringify(sampleOriginal, null, indent));
+  setValue("right", JSON.stringify(sampleModified, null, indent));
+  
+  // Initial comparison
+  scheduleCompare();
+}
+
+// Run initialization
+init();
