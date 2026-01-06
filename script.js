@@ -441,6 +441,9 @@ function parsePath(path) {
 
 function getLastKeyFromPath(path) {
   const parts = parsePath(path);
+  if (parts.length > 0 && typeof parts[parts.length - 1] === "number") {
+    return null;
+  }
   for (let i = parts.length - 1; i >= 0; i--) {
     if (typeof parts[i] === "string") return parts[i];
   }
@@ -455,9 +458,17 @@ function findBestLineForKeyAndValue(content, key, value) {
   const valueToken = isPrimitive(value) ? JSON.stringify(value) : null;
   
   if (keyToken && valueToken) {
+    const keyValueRegex = new RegExp(`"${escapeRegex(key)}"\\s*:\\s*${escapeRegex(valueToken)}(\\s*[,\\]}]|\\s*$)`);
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (line.includes(keyToken) && line.includes(valueToken)) return i;
+      if (keyValueRegex.test(line)) return i;
+    }
+  }
+
+  if (!keyToken && valueToken) {
+    const valueRegex = new RegExp(`(^|\\s)${escapeRegex(valueToken)}(\\s*[,\\]}]|\\s*$)`);
+    for (let i = 0; i < lines.length; i++) {
+      if (valueRegex.test(lines[i])) return i;
     }
   }
   
@@ -476,6 +487,10 @@ function findBestLineForKeyAndValue(content, key, value) {
   }
   
   return null;
+}
+
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function applyDiffHighlightsFromEntries(entries, leftContent, rightContent) {
@@ -512,7 +527,49 @@ function applyDiffHighlightsFromEntries(entries, leftContent, rightContent) {
 function diffObjects(left, right, path = "") {
   const results = [];
   
-  if (isObject(left) && isObject(right)) {
+  if (Array.isArray(left) && Array.isArray(right)) {
+    const maxLength = Math.max(left.length, right.length);
+    for (let i = 0; i < maxLength; i++) {
+      const currentPath = `${path}[${i}]`;
+      const hasLeft = i < left.length;
+      const hasRight = i < right.length;
+      
+      if (hasLeft && !hasRight) {
+        results.push({
+          path: currentPath,
+          status: "missing",
+          oldValue: left[i],
+        });
+        continue;
+      }
+      
+      if (!hasLeft && hasRight) {
+        results.push({
+          path: currentPath,
+          status: "addition",
+          newValue: right[i],
+        });
+        continue;
+      }
+      
+      const leftVal = left[i];
+      const rightVal = right[i];
+      
+      if (Array.isArray(leftVal) && Array.isArray(rightVal)) {
+        results.push(...diffObjects(leftVal, rightVal, currentPath));
+      } else if (isObject(leftVal) && isObject(rightVal) && !Array.isArray(leftVal) && !Array.isArray(rightVal)) {
+        results.push(...diffObjects(leftVal, rightVal, currentPath));
+      } else if (!isEqual(leftVal, rightVal)) {
+        const minor = markAsMinor(currentPath, leftVal, rightVal);
+        results.push({
+          path: currentPath,
+          status: minor ? "minor" : "modified",
+          oldValue: leftVal,
+          newValue: rightVal,
+        });
+      }
+    }
+  } else if (isObject(left) && isObject(right) && !Array.isArray(left) && !Array.isArray(right)) {
     const allKeys = new Set([...Object.keys(left), ...Object.keys(right)]);
     
     allKeys.forEach((key) => {
@@ -536,7 +593,9 @@ function diffObjects(left, right, path = "") {
         const leftVal = left[key];
         const rightVal = right[key];
         
-        if (isObject(leftVal) && isObject(rightVal) && !Array.isArray(leftVal) && !Array.isArray(rightVal)) {
+        if (Array.isArray(leftVal) && Array.isArray(rightVal)) {
+          results.push(...diffObjects(leftVal, rightVal, currentPath));
+        } else if (isObject(leftVal) && isObject(rightVal) && !Array.isArray(leftVal) && !Array.isArray(rightVal)) {
           results.push(...diffObjects(leftVal, rightVal, currentPath));
         } else if (!isEqual(leftVal, rightVal)) {
           const minor = markAsMinor(currentPath, leftVal, rightVal);
