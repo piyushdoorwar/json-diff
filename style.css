@@ -147,6 +147,37 @@ body::before {
     gap: 1rem;
 }
 
+.info-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.info-btn:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.14);
+    transform: translateY(-1px);
+}
+
+.info-btn:focus-visible {
+    outline: 2px solid rgba(139, 92, 246, 0.5);
+    outline-offset: 3px;
+}
+
+.info-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
 /* Mode Switcher */
 .mode-switcher {
     display: flex;
@@ -683,6 +714,53 @@ body::before {
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.info-btn[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    padding: 0.45rem 0.75rem;
+    background: rgba(37, 37, 37, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.16s ease;
+    z-index: 2000;
+    box-shadow: var(--shadow-md);
+    font-weight: 600;
+}
+
+.info-btn[data-tooltip]::before {
+    content: '';
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px) rotate(45deg);
+    width: 10px;
+    height: 10px;
+    background: rgba(37, 37, 37, 0.95);
+    border-left: 1px solid rgba(255, 255, 255, 0.10);
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.16s ease;
+    z-index: 1999;
+}
+
+.info-btn[data-tooltip]:hover::after,
+.info-btn[data-tooltip]:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
 .stat-item {
     display: flex;
     align-items: center;
@@ -945,6 +1023,60 @@ body::before {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+}
+
+.legend-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.legend-row {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 0.85rem;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.legend-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+}
+
+.legend-swatch.added {
+    background: var(--diff-added);
+    border-color: var(--diff-added-border);
+}
+
+.legend-swatch.removed {
+    background: var(--diff-removed);
+    border-color: var(--diff-removed-border);
+}
+
+.legend-swatch.modified {
+    background: var(--diff-modified);
+    border-color: var(--diff-modified-border);
+}
+
+.legend-swatch.minor {
+    background: var(--diff-minor);
+    border-color: var(--diff-minor-border);
+}
+
+.legend-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.legend-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
 }
 
 .setting-group {

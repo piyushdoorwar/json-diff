@@ -26,6 +26,9 @@ const settingsModal = document.getElementById("settingsModal");
 const settingsCloseBtn = document.getElementById("settingsCloseBtn");
 const indentSizeInput = document.getElementById("indentSize");
 const indentTypeSelect = document.getElementById("indentType");
+const diffLegendModal = document.getElementById("diffLegendModal");
+const diffLegendBtn = document.getElementById("diffLegendBtn");
+const diffLegendCloseBtn = document.getElementById("diffLegendCloseBtn");
 
 // Stats elements
 const statAdded = document.getElementById("stat-added");
@@ -284,24 +287,6 @@ function beautifyJSON(side) {
   const indent = getIndentString();
   setValue(side, JSON.stringify(parsed, null, indent));
   showToast("JSON beautified successfully", "success");
-  scheduleCompare();
-}
-
-function minifyJSON(side) {
-  const value = getValue(side).trim();
-  if (!value) {
-    showToast("No JSON to minify", "error");
-    return;
-  }
-  
-  const parsed = tryParse(value);
-  if (!parsed) {
-    showToast("Invalid JSON - cannot minify", "error");
-    return;
-  }
-  
-  setValue(side, JSON.stringify(parsed));
-  showToast("JSON minified successfully", "success");
   scheduleCompare();
 }
 
@@ -618,9 +603,6 @@ document.querySelectorAll(".action-btn[data-action]").forEach((btn) => {
       case "beautify":
         beautifyJSON(side);
         break;
-      case "minify":
-        minifyJSON(side);
-        break;
       case "copy":
         copyJSON(side);
         break;
@@ -683,8 +665,9 @@ if (settingsModal) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && settingsModal?.classList.contains("is-open")) {
-    closeSettingsModal();
+  if (event.key === "Escape") {
+    if (settingsModal?.classList.contains("is-open")) closeSettingsModal();
+    if (diffLegendModal?.classList.contains("is-open")) closeDiffLegendModal();
   }
 });
 
@@ -699,6 +682,35 @@ function closeSettingsModal() {
   if (!settingsModal) return;
   settingsModal.classList.remove("is-open");
   settingsModal.setAttribute("aria-hidden", "true");
+}
+
+function openDiffLegendModal() {
+  if (!diffLegendModal) return;
+  diffLegendModal.classList.add("is-open");
+  diffLegendModal.setAttribute("aria-hidden", "false");
+  if (diffLegendCloseBtn) diffLegendCloseBtn.focus();
+}
+
+function closeDiffLegendModal() {
+  if (!diffLegendModal) return;
+  diffLegendModal.classList.remove("is-open");
+  diffLegendModal.setAttribute("aria-hidden", "true");
+}
+
+if (diffLegendBtn) {
+  diffLegendBtn.addEventListener("click", openDiffLegendModal);
+}
+
+if (diffLegendCloseBtn) {
+  diffLegendCloseBtn.addEventListener("click", closeDiffLegendModal);
+}
+
+if (diffLegendModal) {
+  diffLegendModal.addEventListener("click", (event) => {
+    if (event.target.matches("[data-modal-close]") || event.target === diffLegendModal) {
+      closeDiffLegendModal();
+    }
+  });
 }
 
 // Indent settings change handlers
@@ -719,10 +731,9 @@ function closeSettingsModal() {
 // ==================== Initialization ====================
 
 function init() {
-  // Load sample data on startup
-  const indent = getIndentString();
-  setValue("left", JSON.stringify(sampleOriginal, null, indent));
-  setValue("right", JSON.stringify(sampleModified, null, indent));
+  // Keep editors empty on startup
+  setValue("left", "");
+  setValue("right", "");
   
   // Initial comparison
   scheduleCompare();
