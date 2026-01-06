@@ -322,6 +322,17 @@ function validateJSON(side) {
   }
 }
 
+function undoJSON(side) {
+  const editor = editors[side];
+  if (!editor) return;
+  editor.focus();
+  document.execCommand("undo");
+  updateLineNumbers(side);
+  updateHighlights(side);
+  updateStatus(side);
+  scheduleCompare();
+}
+
 function copyJSON(side) {
   const value = getValue(side);
   if (!value.trim()) {
@@ -334,6 +345,25 @@ function copyJSON(side) {
   }).catch(() => {
     showToast("Failed to copy", "error");
   });
+}
+
+function downloadJSON(side) {
+  const value = getValue(side);
+  if (!value.trim()) {
+    showToast("Nothing to download", "error");
+    return;
+  }
+  
+  const blob = new Blob([value], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = side === "left" ? "original.json" : "modified.json";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("Download started", "success");
 }
 
 function pasteJSON(side) {
@@ -656,6 +686,9 @@ document.querySelectorAll(".action-btn[data-action]").forEach((btn) => {
     const side = btn.dataset.editor;
     
     switch (action) {
+      case "undo":
+        undoJSON(side);
+        break;
       case "validate":
         validateJSON(side);
         break;
@@ -670,6 +703,9 @@ document.querySelectorAll(".action-btn[data-action]").forEach((btn) => {
         break;
       case "sample":
         loadSample(side);
+        break;
+      case "download":
+        downloadJSON(side);
         break;
       case "clear":
         clearJSON(side);
