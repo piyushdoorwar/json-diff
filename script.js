@@ -186,6 +186,27 @@ function syncScroll(side) {
   highlightsEl.scrollLeft = editor.scrollLeft;
 }
 
+let isSyncingEditorScroll = false;
+
+function syncEditorScroll(fromSide) {
+  if (isSyncingEditorScroll) return;
+  isSyncingEditorScroll = true;
+  
+  const toSide = fromSide === "left" ? "right" : "left";
+  const fromEditor = editors[fromSide];
+  const toEditor = editors[toSide];
+  
+  toEditor.scrollTop = fromEditor.scrollTop;
+  toEditor.scrollLeft = fromEditor.scrollLeft;
+  
+  syncScroll(fromSide);
+  syncScroll(toSide);
+  
+  requestAnimationFrame(() => {
+    isSyncingEditorScroll = false;
+  });
+}
+
 // ==================== Editor Value Helpers ====================
 
 function getValue(side) {
@@ -726,7 +747,7 @@ document.querySelectorAll(".action-btn[data-action]").forEach((btn) => {
   });
   
   editor.addEventListener("scroll", () => {
-    syncScroll(side);
+    syncEditorScroll(side);
   });
   
   // Handle tab key for indentation
