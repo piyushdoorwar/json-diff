@@ -186,11 +186,11 @@ function syncScroll(side) {
   highlightsEl.scrollLeft = editor.scrollLeft;
 }
 
-let isSyncingEditorScroll = false;
+let activeScrollSource = null;
 
 function syncEditorScroll(fromSide) {
-  if (isSyncingEditorScroll) return;
-  isSyncingEditorScroll = true;
+  if (activeScrollSource && activeScrollSource !== fromSide) return;
+  activeScrollSource = fromSide;
   
   const toSide = fromSide === "left" ? "right" : "left";
   const fromEditor = editors[fromSide];
@@ -203,7 +203,9 @@ function syncEditorScroll(fromSide) {
   syncScroll(toSide);
   
   requestAnimationFrame(() => {
-    isSyncingEditorScroll = false;
+    if (activeScrollSource === fromSide) {
+      activeScrollSource = null;
+    }
   });
 }
 
@@ -306,7 +308,14 @@ function beautifyJSON(side) {
   }
   
   const indent = getIndentString();
-  setValue(side, JSON.stringify(parsed, null, indent));
+  ["left", "right"].forEach((targetSide) => {
+    const targetValue = getValue(targetSide).trim();
+    if (!targetValue) return;
+    const targetParsed = tryParse(targetValue);
+    if (!targetParsed) return;
+    setValue(targetSide, JSON.stringify(targetParsed, null, indent));
+  });
+  
   showToast("JSON beautified successfully", "success");
   scheduleCompare();
 }
@@ -413,9 +422,13 @@ function clearJSON(side) {
 
 function loadSample(side) {
   const indent = getIndentString();
-  const sample = side === "left" ? sampleOriginal : sampleModified;
-  setValue(side, JSON.stringify(sample, null, indent));
-  showToast("Sample loaded", "success");
+  const formattedLeft = JSON.stringify(sampleOriginal, null, indent);
+  const formattedRight = JSON.stringify(sampleModified, null, indent);
+  
+  setValue("left", formattedLeft);
+  setValue("right", formattedRight);
+  
+  showToast("Samples loaded", "success");
   scheduleCompare();
 }
 
